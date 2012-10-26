@@ -332,6 +332,9 @@ const char kEnablePruneGpuCommandBuffers[] =
 // Enable renderer side mixing and low latency audio path for media elements.
 const char kEnableRendererSideMixing[] = "enable-renderer-side-mixing";
 
+// Enables the IPC for RiverTrail, which can sandbox the rivertrail API.
+const char kEnableRivertrailIPC[]  = "enable-rivertrail-ipc";
+
 // Enables TLS cached info extension.
 const char kEnableSSLCachedInfo[]  = "enable-ssl-cached-info";
 

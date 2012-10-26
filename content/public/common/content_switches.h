@@ -115,6 +115,7 @@ extern const char kEnablePreparsedJsCaching[];
 CONTENT_EXPORT extern const char kEnablePrivilegedWebGLExtensions[];
 extern const char kEnablePruneGpuCommandBuffers[];
 extern const char kEnableRendererSideMixing[];
+CONTENT_EXPORT extern const char kEnableRivertrailIPC[];
 extern const char kEnableSSLCachedInfo[];
 extern const char kEnableSandboxLogging[];
 extern const char kEnableSeccompSandbox[];
