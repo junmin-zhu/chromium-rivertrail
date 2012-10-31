@@ -83,6 +83,7 @@
 #include "third_party/WebKit/Source/WebKit/chromium/public/platform/WebURL.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/platform/WebURLError.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/platform/WebURLRequest.h"
+#include "third_party/RiverTrail/include/extension.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/layout.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -177,6 +178,7 @@ void ChromeContentRendererClient::RenderThreadStarted() {
   thread->RegisterExtension(extensions_v8::ExternalExtension::Get());
   thread->RegisterExtension(extensions_v8::LoadTimesExtension::Get());
   thread->RegisterExtension(extensions_v8::SearchBoxExtension::Get());
+  thread->RegisterExtension(extensions_v8::RiverTrailExtension::Get());
   v8::Extension* search_extension = extensions_v8::SearchExtension::Get();
   // search_extension is null if not enabled.
   if (search_extension)

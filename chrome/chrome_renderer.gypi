@@ -26,6 +26,7 @@
         '../third_party/icu/icu.gyp:icui18n',
         '../third_party/icu/icu.gyp:icuuc',
         '../third_party/npapi/npapi.gyp:npapi',
+        '../third_party/rivertrail/build/rivertrail.gyp:rivertrail',
         '../third_party/smhasher/smhasher.gyp:murmurhash3',
         '../third_party/WebKit/Source/WebKit/chromium/WebKit.gyp:webkit',
         '../ui/surface/surface.gyp:surface',
