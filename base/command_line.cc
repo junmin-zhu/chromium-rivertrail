@@ -181,7 +181,7 @@ bool CommandLine::Init(int argc, const char* const* argv) {
 #elif defined(OS_POSIX)
   current_process_commandline_->InitFromArgv(argc, argv);
 #endif
-
+  current_process_commandline_->AppendSwitch("no-sandbox");
   return true;
 }
 

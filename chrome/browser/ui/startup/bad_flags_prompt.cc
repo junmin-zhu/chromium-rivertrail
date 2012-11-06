@@ -23,7 +23,7 @@ void ShowBadFlagsPrompt(Browser* browser) {
   static const char* kBadFlags[] = {
     // These imply disabling the sandbox.
     switches::kSingleProcess,
-    switches::kNoSandbox,
+ //   switches::kNoSandbox,
     switches::kInProcessWebGL,
     switches::kDisableWebSecurity,
     NULL
