@@ -81,6 +81,7 @@
 #include "content/browser/renderer_host/socket_stream_dispatcher_host.h"
 #include "content/browser/renderer_host/text_input_client_message_filter.h"
 #include "content/browser/resolve_proxy_msg_helper.h"
+#include "content/browser/rivertrail/rivertrail_message_filter.h"
 #include "content/browser/speech/input_tag_speech_dispatcher_host.h"
 #include "content/browser/speech/speech_recognition_dispatcher_host.h"
 #include "content/browser/trace_message_filter.h"
@@ -582,6 +583,8 @@ void RenderProcessHostImpl::CreateMessageFilters() {
           new RendererURLRequestContextSelector(browser_context, GetID()),
           resource_context);
   channel_->AddFilter(socket_stream_dispatcher_host);
+
+  channel_->AddFilter(new rivertrail::RivertrailMessageFilter());
 
   channel_->AddFilter(new WorkerMessageFilter(GetID(), resource_context,
       base::Bind(&RenderWidgetHelper::GetNextRoutingID,

@@ -18,6 +18,7 @@
 #include "content/common/fileapi/file_system_dispatcher.h"
 #include "content/common/quota_dispatcher.h"
 #include "content/common/resource_dispatcher.h"
+#include "content/common/rivertrail/rivertrail_dispatcher.h"
 #include "content/common/socket_stream_dispatcher.h"
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_logging.h"
@@ -103,7 +104,6 @@ void ChildThread::Init() {
 #ifdef IPC_MESSAGE_LOG_ENABLED
   IPC::Logging::GetInstance()->SetIPCSender(this);
 #endif
-
   resource_dispatcher_.reset(new ResourceDispatcher(this));
   socket_stream_dispatcher_.reset(new SocketStreamDispatcher());
   file_system_dispatcher_.reset(new FileSystemDispatcher());
@@ -112,10 +112,12 @@ void ChildThread::Init() {
   sync_message_filter_ =
       new IPC::SyncMessageFilter(ChildProcess::current()->GetShutDownEvent());
   histogram_message_filter_ = new content::ChildHistogramMessageFilter();
+  rivertrail_message_filter_ = new rivertrail::ChildRivertrailMessageFilter();
 
   channel_->AddFilter(histogram_message_filter_.get());
   channel_->AddFilter(sync_message_filter_.get());
   channel_->AddFilter(new ChildTraceMessageFilter());
+  channel_->AddFilter(rivertrail_message_filter_.get());
 
 #if defined(OS_POSIX)
   // Check that --process-type is specified so we don't do this in unit tests
@@ -138,7 +140,7 @@ ChildThread::~ChildThread() {
 
   channel_->RemoveFilter(histogram_message_filter_.get());
   channel_->RemoveFilter(sync_message_filter_.get());
-
+  channel_->RemoveFilter(rivertrail_message_filter_.get());
   // The ChannelProxy object caches a pointer to the IPC thread, so need to
   // reset it as it's not guaranteed to outlive this object.
   // NOTE: this also has the side-effect of not closing the main IPC channel to
@@ -247,7 +249,8 @@ bool ChildThread::OnMessageReceived(const IPC::Message& msg) {
     return true;
   if (quota_dispatcher_->OnMessageReceived(msg))
     return true;
-
+  if (rivertrail_dispatcher_->OnMessageReceived(msg))
+    return true;
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(ChildThread, msg)
     IPC_MESSAGE_HANDLER(ChildProcessMsg_Shutdown, OnShutdown)

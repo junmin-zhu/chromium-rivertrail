@@ -689,6 +689,12 @@
     'browser/resolve_proxy_msg_helper.h',
     'browser/resource_context_impl.cc',
     'browser/resource_context_impl.h',
+    'browser/rivertrail/opencl_config.h',
+    'browser/rivertrail/opencl_compat.h',
+    'browser/rivertrail/platform_data.cc',
+    'browser/rivertrail/platform_data.h',
+    'browser/rivertrail/rivertrail_message_filter.cc',
+    'browser/rivertrail/rivertrail_message_filter.h',
     'browser/safe_util_win.cc',
     'browser/safe_util_win.h',
     'browser/site_instance_impl.cc',
@@ -847,6 +853,9 @@
         # with the windows 8 sdk it does the wrong thing.
         '__ATLHOST_H__',
       ],
+      'include_dirs': [
+        '$(INTELOCLSDKROOT)/include',
+      ],
       'link_settings': {
         'libraries': [
           '-lcomctl32.lib',
@@ -854,7 +863,21 @@
           '-lsensorsapi.lib',
         ],
         'msvs_settings': {
+          'VCLibrarianTool': {
+            'AdditionalLibraryDirectories': [
+              '$(INTELOCLSDKROOT)/lib/x86',
+            ],
+            'AdditionalDependencies': [
+              'OpenCL.lib',
+            ],
+          },
           'VCLinkerTool': {
+#	    'AdditionalLibraryDirectories': [
+#              '$(INTELOCLSDKROOT)/lib/x86',
+#            ],
+#            'AdditionalDependencies': [
+#              'OpenCL.lib',
+#            ],
             'DelayLoadDLLs': [
               'user32.dll',
             ],

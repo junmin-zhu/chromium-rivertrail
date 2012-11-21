@@ -19,6 +19,7 @@ class FileSystemDispatcher;
 class MessageLoop;
 class QuotaDispatcher;
 class SocketStreamDispatcher;
+class RivertrailDispatcher;
 
 namespace content {
 class ChildHistogramMessageFilter;
@@ -152,6 +153,8 @@ class CONTENT_EXPORT ChildThread : public IPC::Listener, public IPC::Sender {
   scoped_ptr<FileSystemDispatcher> file_system_dispatcher_;
 
   scoped_ptr<QuotaDispatcher> quota_dispatcher_;
+
+  scoped_ptr<rivertrail::ChildRivertrailMessageFilter> rivertrail_message_filter_;
 
   scoped_refptr<content::ChildHistogramMessageFilter> histogram_message_filter_;
 
