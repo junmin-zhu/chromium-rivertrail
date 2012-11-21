@@ -854,8 +854,8 @@
         '__ATLHOST_H__',
       ],
       'include_dirs': [
-        '$(INTELOCLSDKROOT)/include',
-      ],
+      '$(INTELOCLSDKROOT)/include',
+		],
       'link_settings': {
         'libraries': [
           '-lcomctl32.lib',
@@ -863,21 +863,21 @@
           '-lsensorsapi.lib',
         ],
         'msvs_settings': {
-          'VCLibrarianTool': {
-            'AdditionalLibraryDirectories': [
-              '$(INTELOCLSDKROOT)/lib/x86',
-            ],
-            'AdditionalDependencies': [
-              'OpenCL.lib',
-            ],
-          },
+           'VCLibrarianTool': {
+			'AdditionalLibraryDirectories': [
+			'$(INTELOCLSDKROOT)/lib/x86',
+			],
+			'AdditionalDependencies': [
+			'OpenCL.lib',
+			],
+		},
           'VCLinkerTool': {
 #	    'AdditionalLibraryDirectories': [
-#              '$(INTELOCLSDKROOT)/lib/x86',
-#            ],
-#            'AdditionalDependencies': [
-#              'OpenCL.lib',
-#            ],
+			'$(INTELOCLSDKROOT)/lib/x86',
+			],
+			'AdditionalDependencies': [
+			'OpenCL.lib',
+			],
             'DelayLoadDLLs': [
               'user32.dll',
             ],

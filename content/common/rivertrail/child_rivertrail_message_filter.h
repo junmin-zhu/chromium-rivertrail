@@ -59,7 +59,7 @@ class ChildRivertrailMessageFilter : public IPC::ChannelProxy::MessageFilter {
       webkit_glue::WebSocketStreamHandleDelegate* delegate);*/
 
   // IPC::Listener implementation.
-  virtual bool OnMessageReceived(const IPC::Message& msg) OVERRIDE;
+  //virtual bool OnMessageReceived(const IPC::Message& msg) OVERRIDE;
 
  private:
   void OnInitialized(int socket_id);

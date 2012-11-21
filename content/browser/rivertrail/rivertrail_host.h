@@ -29,7 +29,8 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 #include "base/memory/ref_counted.h"
-/*#include "net/socket_stream/socket_stream.h"
+#include "base/shared_memory.h"
+#include "net/socket_stream/socket_stream.h"
 
 class GURL;
 
@@ -67,6 +68,8 @@ class SocketStreamHost {
   // Returns false otherwise (transmit buffer exceeds limit, or socket
   // stream is closed).
   bool SendData(const std::vector<char>& data);
+	bool SendData(const base::SharedMemoryHandle& handle,
+								
 
   // Closes the socket stream.
   void Close();
