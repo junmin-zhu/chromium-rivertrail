@@ -27,73 +27,80 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #define CONTENT_BROWSER_RIVERTRAIL_COMPUTE_UNIT_H_
 
 #include <string>
+#include <map>
 
 #include "base/shared_memory.h"
 #include "base/memory/ref_counted.h"
 #include "content/browser/rivertrail/opencl_compat.h"
 #include "content/browser/rivertrail/opencl_config.h"
+#include "content/browser/rivertrail/platform_env.h"
 
 namespace rivertrail {
 enum Type {
-	INT = 0,
-	FLOAT,
-	DOUBLE
+  INT = 0,
+  FLOAT,
+  DOUBLE
 };
 
 class ComputeUnit
 	: public base::RefCountedThreadSafe<ComputeUnit> {
  public:
   ComputeUnit();
-	virtual ~ComputeUnit();
+  ComputeUnit(const cl_platform_id& platform,
+              const int& devType);
+  virtual ~ComputeUnit();
+  
+  //Initialize the platform, context, and so on
+  bool Init(const cl_platform_id& platform,
+            const int& devType);
+  
+  //Use the source, name and options to create and build the kernel
+  bool CompileKernel(const std::string& source, 
+                     const std::string& kernelName,
+                     const std::string& options);
 
-	//Initialize the platform, context, and so on
-	bool Init(const cl_platform_id& platform,
-						const int& devType);
+  inline bool IsKernelValid() { return kernel != NULL; }
 	
-	//Use the source, name and options to create and build the kernel
-	bool CompileKernel(const std::string& source, 
-										 const std::string& kernelName,
-										 const std::string& options);
-	
-	//Get the memory by the handle and then convert the memory to the
-	//array(which type is not determined)
-	void* ConvertMemoryToArray(base::SharedMemoryHandle& handle);
+  //Get the memory by the handle and then convert the memory to the
+  //array(which type is not determined)
+  void* ConvertMemoryToArray(base::SharedMemoryHandle& handle);
 
+  bool ComputeSharedMemory(base::SharedMemoryHandle& handle, 
+                           const size_t& size,
+                           const Type& type);
 
-	bool ComputeSharedMemory(base::SharedMemoryHandle& handle, 
-													 void* _retval,
-													 const size_t& size,
-													 Type& type);
+  bool ComputeInteger(int* data,
+                      //int* result,
+                      const size_t& size);
+  bool ComputeDouble(double* data,
+                     // double* result,
+                     const size_t& size);
+  bool ComputeFloat(float* data,
+                    //float* result,
+                    const size_t& size);
 
-	bool ComputeInteger(const int* data,
-											int* result,
-											const size_t& size);
-	bool ComputeDouble(const double* data,
-										 double* result,
-										 const size_t& size);
-	bool ComputeFloat(const float* data,
-										float* result,
-										const size_t& size);
 
  private:
-	bool ComputeIntegerMemory(base::SharedMemoryHandle& handle, 
-														const size_t& size,
-														int* _retval);
-	bool ComputeFloatMemory(base::SharedMemoryHandle& handle, 
-													const size_t& size,
-													float* _retval);
-	bool ComputeDoubleMemory(base::SharedMemoryHandle& handle, 
-													 const size_t& size,
-													 double* _retval);
+  bool ComputeIntegerMemory(base::SharedMemoryHandle& handle, 
+                            const size_t& size);
+  bool ComputeFloatMemory(base::SharedMemoryHandle& handle, 
+                          const size_t& size);
+  bool ComputeDoubleMemory(base::SharedMemoryHandle& handle, 
+                           const size_t& size);
+
+  cl_kernel FindKernelBySource(const std::string& source);
 
  private:
-	cl_kernel kernel;
-	cl_context context;
-	cl_command_queue commands;
-	cl_device_id device_id;
-	cl_program program;
-	char* buildLog;
-	size_t buildLogSize;
+  cl_platform_id platform;
+  cl_kernel kernel;
+  cl_context context;
+  cl_command_queue commands;
+  cl_device_id device_id;
+  cl_program program;
+  char* buildLog;
+  size_t buildLogSize;
+  
+  std::map<std::string, cl_kernel> kernels;
 };
 }
 

@@ -29,6 +29,9 @@ THE POSSIBILITY OF SUCH DAMAGE.
 //#include <wtf/text/WTFString.h>
 
 #include "base/memory/ref_counted.h"
+#include "base/memory/scoped_ptr.h"
+#include "base/shared_memory.h"
+#include "content/browser/rivertrail/compute_unit.h"
 #include "content/common/content_export.h"
 #include "opencl_config.h"
 #include "opencl_compat.h"
@@ -39,15 +42,34 @@ class Message;
 
 namespace rivertrail {
 
-class CONTENT_EXPORT PlatformData :
-    public base::RefCountedThreadSafe<PlatformData> {
+class CONTENT_EXPORT PlatformEnv :
+    public base::RefCountedThreadSafe<PlatformEnv> {
  public:
   virtual IPC::Message* CreateIPCMessage(int render_view_id) const;
-  PlatformData();
-  virtual ~PlatformData();
+  PlatformEnv();
+  virtual ~PlatformEnv();
+
+  inline cl_platform_id GetPlatform() {
+	cl_int err = CL_SUCCESS;
+	err = clGetPlatformIDs(1, &platform, NULL);
+	if(err != CL_SUCCESS)
+	  return NULL;
+	  return platform;
+  }
+
+  inline bool PlatformCompileKernel(const std::string& kernelSource,
+                                    const std::string& kernelName,
+                                    const std::string& options) {
+	return compute_unit_->CompileKernel(kernelSource, kernelName, options);
+  }
+
+  bool PlatformCompute(base::SharedMemoryHandle& handle,
+                       const Type& type,
+                       const size_t& size);
+
 
  private:
-  friend class base::RefCountedThreadSafe<PlatformData>;
+  friend class base::RefCountedThreadSafe<PlatformEnv>;
 
   int getPlatformPropertyHelper(cl_platform_info param, char* & out);
 
@@ -58,7 +80,11 @@ class CONTENT_EXPORT PlatformData :
   char* name_;
   char* version_;
 
-  DISALLOW_COPY_AND_ASSIGN(PlatformData);
+  cl_platform_id platform;
+
+  scoped_ptr<rivertrail::ComputeUnit> compute_unit_;
+
+  DISALLOW_COPY_AND_ASSIGN(PlatformEnv);
 };
 
 }  // namespace rivertrail

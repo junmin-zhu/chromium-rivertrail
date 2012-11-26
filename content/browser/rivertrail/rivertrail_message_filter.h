@@ -28,25 +28,32 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <map>
 
-#include "content/browser/rivertrail/platform_data.h"
+#include "base/callback.h"
+#include "content/browser/rivertrail/platform_env.h"
 #include "content/public/browser/browser_message_filter.h"
 
 namespace rivertrail {
 
 class RivertrailMessageFilter : public content::BrowserMessageFilter {
  public:
+  typedef base::Callback<int(void)> NextRoutingIDCallback;
+  
   RivertrailMessageFilter();
 
   // content::BrowserMessageFilter implementation.
   virtual bool OnMessageReceived(const IPC::Message& message,
                                  bool* message_was_ok) OVERRIDE;
+  virtual void OnChannelClosing() OVERRIDE;
+ 
  protected:
   void OnInitializing(int render_view_id);
 
  private:
   virtual ~RivertrailMessageFilter();
 
-  scoped_refptr<PlatformData> platform_data_;
+  scoped_refptr<PlatformEnv> platform_data_;
+  
+  int render_process_id_;
 
   DISALLOW_COPY_AND_ASSIGN(RivertrailMessageFilter);
 };

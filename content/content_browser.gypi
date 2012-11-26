@@ -689,10 +689,15 @@
     'browser/resolve_proxy_msg_helper.h',
     'browser/resource_context_impl.cc',
     'browser/resource_context_impl.h',
+	'browser/rivertrail/debug_log.h',
+	'browser/rivertrail/compute_unit.cc',
+	'browser/rivertrail/compute_unit.h',
     'browser/rivertrail/opencl_config.h',
     'browser/rivertrail/opencl_compat.h',
-    'browser/rivertrail/platform_data.cc',
-    'browser/rivertrail/platform_data.h',
+    'browser/rivertrail/platform_env.cc',
+    'browser/rivertrail/platform_env.h',
+	'browser/rivertrail/rivertrail_host.cc',
+	'browser/rivertrail/rivertrail_host.h',
     'browser/rivertrail/rivertrail_message_filter.cc',
     'browser/rivertrail/rivertrail_message_filter.h',
     'browser/safe_util_win.cc',
@@ -872,7 +877,7 @@
 			],
 		},
           'VCLinkerTool': {
-#	    'AdditionalLibraryDirectories': [
+	    'AdditionalLibraryDirectories': [
 			'$(INTELOCLSDKROOT)/lib/x86',
 			],
 			'AdditionalDependencies': [

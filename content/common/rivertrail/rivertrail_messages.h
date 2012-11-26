@@ -26,10 +26,22 @@ THE POSSIBILITY OF SUCH DAMAGE.
 // Multiply-included message file, hence no include guard.
 #include <vector>
 
+#include "base/shared_memory.h"
+#include "content/browser/rivertrail/compute_unit.h"
 #include "content/common/content_export.h"
-#include "googleurl/src/gurl.h"
 #include "ipc/ipc_message_macros.h"
+#include "ipc/ipc_message_utils.h"
 #include "ipc/ipc_param_traits.h"
+
+using namespace rivertrail;
+
+#ifndef CONTENT_COMMON_RIVERTRAIL_MESSAGES_H_
+#define CONTENT_COMMON_RIVERTRAIL_MESSAGES_H_
+
+typedef std::pair<string16, std::vector<int> > QueuedMessage;
+
+#endif  // CONTENT_COMMON_RIVERTRAIL_MESSAGES_H_
+
 
 #undef IPC_MESSAGE_EXPORT
 #define IPC_MESSAGE_EXPORT CONTENT_EXPORT
@@ -55,13 +67,27 @@ IPC_MESSAGE_CONTROL0(RivertrailHostMsg_SendInit)
 // RiverTrail messages sent from the browser to the renderer.
 
 IPC_MESSAGE_CONTROL1(RivertrailMsg_SendInfo,
-                     char*	/*The information of platform, context and so on*/)
+                     char* platform_info/*The information of platform, context and so on*/)
 
 //IPC_MESSAGE_CONTROL4(RivertrailMsg_SendArray,
 //                     std::vector<char>,
 //                     TYPE,
 //                     operator,
 //                     ValueList )
+
+IPC_MESSAGE_CONTROL3(RivertrailHostMsg_SendMemoryToOCL,
+										 base::SharedMemoryHandle* handle,
+										 size_t& size,
+										 Type& type)
+
+IPC_MESSAGE_CONTROL3(RivertrailHostMsg_SendSourceToOCL,
+										 std::string&,
+										 std::string&,
+										 std::string&)
+
+
+										 
+										
 
 //IPC_MESSAGE_CONTROL2(RivertrailMsg_SendBuffer,
 //                     SharedMemoryHandle,  /*data*/

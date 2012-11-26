@@ -23,7 +23,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 *************************************************************************/
 
-#include "content/browser/rivertrail/platform_data.h"
+#include "content/browser/rivertrail/platform_env.h"
 
 #include <cmath>
 #include "content/common/rivertrail/rivertrail_messages.h"
@@ -31,7 +31,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 namespace rivertrail {
 cl_platform_id s_platforms = NULL;
 
-IPC::Message* PlatformData::CreateIPCMessage(int render_view_id) const {
+IPC::Message* PlatformEnv::CreateIPCMessage(int render_view_id) const {
 /*  RivertrailMsg_Updated_Params params;
   params.extensions = extensions_;
   params.name = name_;
@@ -44,10 +44,12 @@ IPC::Message* PlatformData::CreateIPCMessage(int render_view_id) const {
   return NULL;
 }
 
-PlatformData::PlatformData() {
+PlatformEnv::PlatformEnv() {
   cl_uint devices;
   cl_int err_code = clGetDeviceIDs(s_platforms, CL_DEVICE_TYPE_ALL, 0, NULL, &devices);
   numberOfDevices_ = devices;
+
+	platform = GetPlatform();
 
   getPlatformPropertyHelper(CL_PLATFORM_EXTENSIONS, extensions_);
   getPlatformPropertyHelper(CL_PLATFORM_NAME, name_);
@@ -56,7 +58,7 @@ PlatformData::PlatformData() {
   getPlatformPropertyHelper(CL_PLATFORM_VERSION, version_);
 }
 
-PlatformData::~PlatformData() {
+PlatformEnv::~PlatformEnv() {
   delete extensions_;
   delete name_;
   delete profile_;
@@ -64,7 +66,7 @@ PlatformData::~PlatformData() {
   delete version_;
 }
 
-int PlatformData::getPlatformPropertyHelper(cl_platform_info param, char* & out) {
+int PlatformEnv::getPlatformPropertyHelper(cl_platform_info param, char* & out) {
   char* rString = NULL;
   size_t length;
   cl_int err;
@@ -77,6 +79,14 @@ int PlatformData::getPlatformPropertyHelper(cl_platform_info param, char* & out)
   }
 
   return err;
+}
+
+bool PlatformEnv::PlatformCompute(base::SharedMemoryHandle& handle,
+                                  const Type& type,
+                                  const size_t& size) {
+  if(!compute_unit_->IsKernelValid())
+    return false;
+  return compute_unit_->ComputeSharedMemory(handle, size, type);
 }
 
 }  // namespace rivertrail

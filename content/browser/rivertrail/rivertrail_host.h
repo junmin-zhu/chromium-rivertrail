@@ -28,78 +28,61 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vector>
 
-#include "base/memory/ref_counted.h"
+#include "base/callback.h"
+#include "base/memory/scoped_ptr.h"
 #include "base/shared_memory.h"
+#include "base/process.h"
+
+
 #include "content/browser/rivertrail/compute_unit.h"
+#include "content/browser/rivertrail/platform_env.h"
+#include "content/public/browser/browser_child_process_host_delegate.h"
 #include "net/socket_stream/socket_stream.h"
+#include "ipc/ipc_sender.h"
 
-class GURL;
+class BrowserChildProcessHostImpl;
 
-using namespace rivertrail;
+namespace IPC {
+	struct ChannelHandle;
+}
 
-namespace net {
-class SocketStreamJob;
-class URLRequestContext;
-class SSLInfo;
-}  // namespace net
-// Host of RivertrailHandle.
-// Each RivertrailHandle will have an unique socket_id assigned by
-// RivertrailHost constructor. If socket id is content::kNoSocketId,
-// there is no RivertrailHost.
-// The lifetime of an instance of this class is completely controlled by the
-// RivertrailDispatcherHost.
-class SocketStreamHost {
+class RivertrailHost : public content::BrowserChildProcessHostDelegate,
+											 public IPC::Sender {
  public:
-  SocketStreamHost(net::SocketStream::Delegate* delegate,
-                   int render_view_id,
-                   int socket_id);
-  ~SocketStreamHost();
+  virtual bool Send(IPC::Message* msg) OVERRIDE;
 
-  // Gets socket_id associated with |socket|.
-  static int SocketIdFromSocketStream(net::SocketStream* socket);
+  static RivertrailHost* FromID(int host_id);
+  int host_id() const { return host_id_; }
 
-  int render_view_id() const { return render_view_id_; }
-  int socket_id() const { return socket_id_; }
-
-  // Starts to open connection to |url|.
-  void Connect(const GURL& url, net::URLRequestContext* request_context);
-
-  // Sends |data| over the socket stream.
-  // socket stream must be open to send data.
-  // Returns true if the data is put in transmit buffer in socket stream.
-  // Returns false otherwise (transmit buffer exceeds limit, or socket
-  // stream is closed).
-  bool SendData(const std::vector<char>& data);
-	bool SendDataToOCL(base::SharedMemoryHandle& handle,
-										 const size_t& size,
-										 Type& type);
-				
-
-  // Closes the socket stream.
-  void Close();
-
-  // Following CancelWithError, CancelWithSSLError, and ContinueDespiteError
-  // will be called by net::SocketStream::Delegate in OnSSLCertificateError.
-  // CancelWithError Cancels the connection because of an error.
-  // |error| is net::Error which represents the error.
-  void CancelWithError(int error);
-
-  // Cancels the connection because of receiving a certificate with an error.
-  void CancelWithSSLError(const net::SSLInfo& ssl_info);
-
-  // Continue to establish the connection in spite of an error.
-  void ContinueDespiteError();
 
  private:
-  net::SocketStream::Delegate* delegate_;
-  int render_view_id_;
-  int socket_id_;
+  static bool HostIsValid(RivertrailHost* host);
 
-	scoped_refptr<rivertrail::ComputeUnit> compute_unit;
+  RivertrailHost(int host_id);
+  virtual ~RivertrailHost();
 
-  scoped_refptr<net::SocketStreamJob> socket_;
+  bool Init();
 
-  DISALLOW_COPY_AND_ASSIGN(SocketStreamHost);
+  virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
+  virtual void OnChannelConnected(int32 peer_pid) OVERRIDE;
+  virtual void OnProcessLaunched() OVERRIDE;
+  virtual void OnProcessCrashed(int exit_code) OVERRIDE;
+
+  virtual bool OnSendSourceToOCL(std::string& kernelSource,
+                                 std::string& kernelName,
+                                 std::string& options);
+  virtual bool OnSendMemoryToOCL(base::SharedMemoryHandle& handle, 
+                                 const size_t& size,
+                                 rivertrail::Type& type);
+	
+ private:
+  int host_id_;
+  std::queue<IPC::Message*> queued_messages_;
+  //scoped_ptr<rivertrail::ComputeUnit> compute_unit_;
+  scoped_ptr<rivertrail::PlatformEnv> platform_env_;
+  scoped_ptr<BrowserChildProcessHostImpl> process_;
+	
 };
+
 
 #endif  // CONTENT_BROWSER_RENDERER_HOST_RIVERTRAIL_HOST_H_

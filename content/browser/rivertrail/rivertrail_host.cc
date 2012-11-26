@@ -22,92 +22,74 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
 THE POSSIBILITY OF SUCH DAMAGE.
 *************************************************************************/
-/*
-#include "content/browser/renderer_host/socket_stream_host.h"
-
 #include "base/logging.h"
-#include "content/common/socket_stream.h"
-#include "net/socket_stream/socket_stream_job.h"
+#include "base/debug/trace_event.h"
+#include "content/browser/browser_child_process_host_impl.h"
+#include "content/browser/rivertrail/platform_env.h"
+#include "content/browser/rivertrail/rivertrail_host.h"
+#include "content/browser/rivertrail/rivertrail_message_filter.h"
+#include "content/common/rivertrail/rivertrail_messages.h"
+#include "content/public/browser/browser_thread.h"
 
-static const char* kSocketIdKey = "socketId";
+using content::BrowserThread;
 
-class SocketStreamId : public net::SocketStream::UserData {
- public:
-  explicit SocketStreamId(int socket_id) : socket_id_(socket_id) {}
-  virtual ~SocketStreamId() {}
-  int socket_id() const { return socket_id_; }
-
- private:
-  int socket_id_;
-};
-
-SocketStreamHost::SocketStreamHost(
-    net::SocketStream::Delegate* delegate,
-    int render_view_id,
-    int socket_id)
-    : delegate_(delegate),
-      render_view_id_(render_view_id),
-      socket_id_(socket_id) {
-  DCHECK_NE(socket_id_, content::kNoSocketId);
-  VLOG(1) << "SocketStreamHost: render_view_id=" << render_view_id
-          << " socket_id=" << socket_id_;
+RivertrailHost::RivertrailHost(int host_id)
+	: host_id_(host_id) {
 }
 
-/* static *//*
-int SocketStreamHost::SocketIdFromSocketStream(net::SocketStream* socket) {
-  net::SocketStream::UserData* d = socket->GetUserData(kSocketIdKey);
-  if (d) {
-    SocketStreamId* socket_stream_id = static_cast<SocketStreamId*>(d);
-    return socket_stream_id->socket_id();
+bool RivertrailHost::OnSendSourceToOCL(std::string& kernelSource,
+                                       std::string& kernelName,
+                                       std::string& options) {
+  if(!platform_env_->PlatformCompileKernel(kernelSource, kernelName, options)) {
+    return false;
   }
-  return content::kNoSocketId;
+  return true;
 }
 
-SocketStreamHost::~SocketStreamHost() {
-  VLOG(1) << "SocketStreamHost destructed socket_id=" << socket_id_;
-  socket_->DetachDelegate();
+bool RivertrailHost::OnSendMemoryToOCL(base::SharedMemoryHandle& handle,
+                                       const size_t& size,
+                                       rivertrail::Type& type) {
+  if(!base::SharedMemory::IsHandleValid(handle)) 
+    return false;	
+  return platform_env_->PlatformCompute(handle, type, size);
 }
 
-void SocketStreamHost::Connect(const GURL& url,
-                               net::URLRequestContext* request_context) {
-  VLOG(1) << "SocketStreamHost::Connect url=" << url;
-  socket_ = net::SocketStreamJob::CreateSocketStreamJob(
-      url, delegate_, request_context->transport_security_state(),
-      request_context->ssl_config_service());
-  socket_->set_context(request_context);
-  socket_->SetUserData(kSocketIdKey, new SocketStreamId(socket_id_));
-  socket_->Connect();
+
+bool RivertrailHost::OnMessageReceived(const IPC::Message& msg) {
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
+  bool msg_is_ok = true;
+  bool handle = true;
+  IPC_BEGIN_MESSAGE_MAP_EX(RivertrailHost, msg, msg_is_ok)
+	IPC_MESSAGE_HANDLER(RivertrailHostMsg_SendSourceToOCL, 
+						OnSendSourceToOCL)
+	IPC_MESSAGE_HANDLER(RivertrailHostMsg_SendMemoryToOCL,
+						OnSendMemoryToOCL)
+		//?
+	IPC_MESSAGE_UNHANDLED(handle = false)
+	IPC_END_MESSAGE_MAP_EX()
+  return handle;
 }
 
-bool SocketStreamHost::SendData(const std::vector<char>& data) {
-  VLOG(1) << "SocketStreamHost::SendData";
-  return socket_ && socket_->SendData(&data[0], data.size());
+bool RivertrailHost::Send(IPC::Message* msg) {
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
+  
+  bool result = process_->Send(msg);
+  return result;
 }
 
-void SocketStreamHost::Close() {
-  VLOG(1) << "SocketStreamHost::Close";
-  if (!socket_)
-    return;
-  socket_->Close();
+
+void RivertrailHost::OnChannelConnected(int32 peer_pid) {
+  while(!queued_messages_.empty()) {
+    Send(queued_messages_.front());
+	queued_messages_.pop();
+  }
 }
 
-void SocketStreamHost::CancelWithError(int error) {
-  VLOG(1) << "SocketStreamHost::CancelWithError: error=" << error;
-  if (!socket_)
-    return;
-  socket_->CancelWithError(error);
+
+void RivertrailHost::OnProcessLaunched() {
+	//This need to discuss
 }
 
-void SocketStreamHost::CancelWithSSLError(const net::SSLInfo& ssl_info) {
-  VLOG(1) << "SocketStreamHost::CancelWithSSLError";
-  if (!socket_)
-    return;
-  socket_->CancelWithSSLError(ssl_info);
-}
 
-void SocketStreamHost::ContinueDespiteError() {
-  VLOG(1) << "SocketStreamHost::ContinueDespiteError";
-  if (!socket_)
-    return;
-  socket_->ContinueDespiteError();
-}*/
+
+

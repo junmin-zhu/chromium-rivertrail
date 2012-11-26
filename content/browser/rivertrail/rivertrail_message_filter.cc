@@ -25,16 +25,17 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "content/browser/rivertrail/rivertrail_message_filter.h"
 
-#include "content/browser/rivertrail/platform_data.h"
-//#include "content/common/rivertrail_messages.h"
+#include "content/browser/rivertrail/platform_env.h"
+#include "content/common/rivertrail/rivertrail_messages.h"
 #include "content/public/browser/browser_thread.h"
 
 using content::BrowserThread;
+using content::BrowserMessageFilter;
 
 namespace rivertrail {
 
 RivertrailMessageFilter::RivertrailMessageFilter() {
-  platform_data_ = new PlatformData();
+  platform_data_ = new PlatformEnv();
 }
 
 RivertrailMessageFilter::~RivertrailMessageFilter() {
@@ -45,10 +46,10 @@ bool RivertrailMessageFilter::OnMessageReceived(const IPC::Message& message,
                                                  bool* message_was_ok) {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
   bool handled = true;
-/*  IPC_BEGIN_MESSAGE_MAP_EX(RivertrailMessageFilter, message, *message_was_ok)
-    IPC_MESSAGE_HANDLER(RivertrailHostMsg_Initializing, OnInitializing)
+  IPC_BEGIN_MESSAGE_MAP_EX(RivertrailMessageFilter, message, *message_was_ok)
+   // IPC_MESSAGE_HANDLER(RivertrailHostMsg_Initializing, OnInitializing)
     IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()*/
+  IPC_END_MESSAGE_MAP()
   return handled;
 }
 
