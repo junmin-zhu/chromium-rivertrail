@@ -30,16 +30,18 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "base/memory/ref_counted.h"
 #include "base/shared_memory.h"
+#include "content/browser/rivertrail/compute_unit.h"
 #include "net/socket_stream/socket_stream.h"
 
 class GURL;
+
+using namespace rivertrail;
 
 namespace net {
 class SocketStreamJob;
 class URLRequestContext;
 class SSLInfo;
 }  // namespace net
-*/
 // Host of RivertrailHandle.
 // Each RivertrailHandle will have an unique socket_id assigned by
 // RivertrailHost constructor. If socket id is content::kNoSocketId,
@@ -68,8 +70,10 @@ class SocketStreamHost {
   // Returns false otherwise (transmit buffer exceeds limit, or socket
   // stream is closed).
   bool SendData(const std::vector<char>& data);
-	bool SendData(const base::SharedMemoryHandle& handle,
-								
+	bool SendDataToOCL(base::SharedMemoryHandle& handle,
+										 const size_t& size,
+										 Type& type);
+				
 
   // Closes the socket stream.
   void Close();
@@ -90,6 +94,8 @@ class SocketStreamHost {
   net::SocketStream::Delegate* delegate_;
   int render_view_id_;
   int socket_id_;
+
+	scoped_refptr<rivertrail::ComputeUnit> compute_unit;
 
   scoped_refptr<net::SocketStreamJob> socket_;
 

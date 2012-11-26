@@ -29,6 +29,8 @@
 
 #define INTERFACE_VERSION           2   /* running version number of the interface */
 #define NUMBER_OF_ARTIFICIAL_ARGS   1   /* number of internal kernel arguments used by runtime */
+#define DEFAULT_KERNEL_NAME_SIZE    7   /* default kernel name's size*/
+#define DEFAULT_KERNEL_NAME					"kernel"  /*default kernel name*/
 
 #define CLPROFILE               /* enable cl profiling support */
 #undef CLPROFILE_ASYNC          /* use event callbacks for profiling */
