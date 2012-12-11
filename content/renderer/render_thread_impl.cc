@@ -662,6 +662,9 @@ void RenderThreadImpl::EnsureWebKitInitialized() {
       command_line.HasSwitch(switches::kEnableTouchEvents));
 #endif
 
+  WebRuntimeFeatures::enableRivertrailIPC(
+      command_line.HasSwitch(switches::kEnableRivertrailIPC));
+
   WebRuntimeFeatures::enableDeviceMotion(
       command_line.HasSwitch(switches::kEnableDeviceMotion));
 
