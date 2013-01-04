@@ -13,6 +13,23 @@
   var utils = require('utils');
   var validate = require('schemaUtils').validate;
 
+  var ParallelArray = require('ParallelArray');
+
+  var jitNDefs = require('jitNarcissusJSDefs').definitions;
+  var jitNLex = require('jitNarcissusJSLex');
+  var jitNParse = require('jitNarcissusJSParse');
+  var jitNDecomp = require('jitNarcissusJSDecomp');
+  var jitCDefs = require('jitCompilerDefinitions');
+  var jitCHelper = require('jitCompilerHelper');
+  var jitCDriver = require('jitCompilerDriver');
+  var jitCDotviz = require('jitCompilerDotviz');
+  var jitCTI = require('jitCompilerTypeInference');
+  var jitCCRA = require('jitCompilerRangeAnalysis');
+  var jitCIBF = require('jitCompilerInferBlockFlow');
+  var jitCIM = require('jitCompilerInfermem');
+  var jitCGenOCL = require('jitCompilerGenOCL');
+  var jitCRunOCL = require('jitCompilerRunOCL');
+
   var chromeHidden = requireNative('chrome_hidden').GetChromeHidden();
   var GetExtensionAPIDefinition =
       requireNative('apiDefinitions').GetExtensionAPIDefinition;
