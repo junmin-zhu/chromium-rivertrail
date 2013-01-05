@@ -43,10 +43,6 @@
 // It uses the Narcissus AST API.
 //
 
-if (RiverTrail === undefined) {
-    var RiverTrail = {};
-}
-
 RiverTrail.compiler.codeGen = (function() {
     const verboseDebug = false;
     const checkBounds = true;
@@ -582,6 +578,7 @@ RiverTrail.compiler.codeGen = (function() {
 
             // Emit definitions of InlineObject types
             //var globalInlineObjectTypes = RiverTrail.TypeInference.globalInlineObjectTypes;
+            var globalInlineObjectTypes = RiverTrail.globalInlineObjectTypes;
             var numGlobalObjTypes = globalInlineObjectTypes.length;
 
             for(var i = 0; i < numGlobalObjTypes; i++) {
@@ -2015,3 +2012,4 @@ RiverTrail.compiler.codeGen = (function() {
 
     return {"compile" : genKernel, "getError" : getError};
 }());
+exports = RiverTrail.compiler.codeGen;

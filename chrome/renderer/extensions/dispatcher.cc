@@ -625,7 +625,7 @@ void Dispatcher::PopulateSourceMap() {
   source_map_.RegisterSource("setIcon", IDR_SET_ICON_JS);
   source_map_.RegisterSource("utils", IDR_UTILS_JS);
 
-	source_map_.RegisterSource("jitCompilerDefinitions", IDR_JIT_COMPILER_DEFINITIONS_JS);
+  source_map_.RegisterSource("jitCompilerDefinitions", IDR_JIT_COMPILER_DEFINITIONS_JS);
   source_map_.RegisterSource("jitCompilerDotviz", IDR_JIT_COMPILER_DOTVIZ_JS);
   source_map_.RegisterSource("jitCompilerDriver", IDR_JIT_COMPILER_DRIVER_JS);
   source_map_.RegisterSource("jitCompilerGenOCL", IDR_JIT_COMPILER_GENOCL_JS);

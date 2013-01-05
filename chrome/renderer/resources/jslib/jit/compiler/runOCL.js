@@ -26,10 +26,6 @@
  */
 
 
-if (RiverTrail === undefined) {
-    var RiverTrail = {};
-}
-
 // Executes the kernel function with the ParallelArray this and the args for the elemental function
 // paSource     - 'this' inside the kernel
 // kernelString - either a JavaScript code string or a precompiled kernel (dpoIKernel/CKernel object)
@@ -351,3 +347,4 @@ RiverTrail.compiler.runOCL = function () {
 
     return runOCL;
 } ();
+exports = RiverTrail.compiler.runOCL;

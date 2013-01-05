@@ -1550,3 +1550,4 @@ RiverTrail.RangeAnalysis = function () {
             "propagate" : propagate
         };
 }();
+exports = RiverTrail.RangeAnalysis;
