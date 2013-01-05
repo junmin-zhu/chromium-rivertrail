@@ -111,6 +111,16 @@ v8::Handle<v8::Value> ModuleSystem::RequireForJs(const v8::Arguments& args) {
 v8::Handle<v8::Value> ModuleSystem::RequireForJsInner(
     v8::Handle<v8::String> module_name) {
   v8::HandleScope handle_scope;
+
+	//There are some eval functions in compiler and narcissus js libs,
+  //When load this js files , make sure that the current context allows
+  //the function like eval...
+  std::string std_module_name = *v8::String::AsciiValue(module_name);
+  if (std_module_name.substr(0, 14) == "jitNarcissusJS" ||
+    std_module_name.substr(0, 11) == "jitCompiler")
+    v8::Context::GetCurrent()->AllowCodeGenerationFromStrings(true);
+  else
+    v8::Context::GetCurrent()->AllowCodeGenerationFromStrings(false);
   v8::Handle<v8::Object> global(v8::Context::GetCurrent()->Global());
   v8::Handle<v8::Object> modules(v8::Handle<v8::Object>::Cast(
       global->GetHiddenValue(v8::String::New(kModulesField))));
