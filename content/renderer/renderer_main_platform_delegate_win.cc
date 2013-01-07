@@ -15,6 +15,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "sandbox/win/src/sandbox.h"
 #include "skia/ext/skia_sandbox_support_win.h"
+#include "third_party/WebKit/Source/WebCore/rivertrail/OCLUtil.h"
 #include "unicode/timezone.h"
 
 namespace content {
@@ -68,6 +69,12 @@ void RendererMainPlatformDelegate::PlatformInitialize() {
   // malicious code if the renderer gets compromised.
   const CommandLine& command_line = parameters_.command_line;
   bool no_sandbox = command_line.HasSwitch(switches::kNoSandbox);
+
+  // OCLUtil class (used in RiverTrail) needs to initialize
+  // before render process sanboxed, because it needs to access the
+  // registry keys and load the context.
+  WebCore::OCLUtil* opencl_util = new WebCore::OCLUtil();
+  opencl_util->Init();
 
   if (!no_sandbox) {
     // ICU DateFormat class (used in base/time_format.cc) needs to get the
