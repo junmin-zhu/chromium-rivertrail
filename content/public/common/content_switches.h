@@ -113,7 +113,6 @@ extern const char kEnableUIReleaseFrontSurface[];
 extern const char kEnablePinch[];
 extern const char kEnablePreparsedJsCaching[];
 CONTENT_EXPORT extern const char kEnablePrivilegedWebGLExtensions[];
-CONTENT_EXPORT extern const char kEnableRivertrailIPC[];
 extern const char kEnablePruneGpuCommandBuffers[];
 extern const char kEnableSSLCachedInfo[];
 extern const char kEnableSandboxLogging[];
