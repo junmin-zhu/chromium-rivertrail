@@ -371,33 +371,18 @@
         ['include', '^renderer/render_view_linux\\.cc$'],
       ],
     }],
-  ],
-  'target_conditions': [
     ['OS=="win"', {
-      'target_defaults': {
-        'variables': {
-          'optimize': 'max',
-        },
-        'include_dirs': [
-          '$(INTELOCLSDKROOT)/include',
-        ],
-        'msvs_settings': {
-          'VCLibrarianTool': {
-            'AdditionalLibraryDirectories': [
-              '$(INTELOCLSDKROOT)/lib/x86',
-            ],
-            'AdditionalDependencies': [
-              'OpenCL.lib',
-            ],
-          },
-          'VCLinkerTool': {
-            'AdditionalLibraryDirectories': [
-              '$(INTELOCLSDKROOT)/lib/x86',
-            ],
-            'AdditionalDependencies': [
-              'OpenCL.lib',
-            ],
-          },
+      'include_dirs': [
+        '$(INTELOCLSDKROOT)/include',
+      ],
+      'msvs_settings': {
+        'VCLinkerTool': {
+          'AdditionalLibraryDirectories': [
+            '$(INTELOCLSDKROOT)/lib/x86',
+          ],
+          'AdditionalDependencies': [
+            'OpenCL.lib',
+          ],
         },
       },
     }],
