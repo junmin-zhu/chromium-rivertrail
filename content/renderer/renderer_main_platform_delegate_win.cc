@@ -91,6 +91,8 @@ void RendererMainPlatformDelegate::PlatformInitialize() {
 void RendererMainPlatformDelegate::PlatformUninitialize() {
   // At this point we are shutting down in a normal code path, so undo our
   // hack to crash on exit.
+  WebCore::OCLUtil* opencl_util = new WebCore::OCLUtil();
+  opencl_util->Uninit();
   base::win::SetShouldCrashOnProcessDetach(false);
 }
 
