@@ -2,25 +2,25 @@
  * Copyright (c) 2011, Intel Corporation
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are met:
  *
- * - Redistributions of source code must retain the above copyright notice,
+ * - Redistributions of source code must retain the above copyright notice, 
  *   this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
+ * - Redistributions in binary form must reproduce the above copyright notice, 
+ *   this list of conditions and the following disclaimer in the documentation 
  *   and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
@@ -46,7 +46,7 @@ RiverTrail.Helper = function () {
         }
         return ast;
     }
-
+            
     function wrappedPP (ast) {
         var s;
 
@@ -75,7 +75,7 @@ RiverTrail.Helper = function () {
         [Float32Array, "float"],
         [Float64Array, "double"]
     ];
-
+    
     function constructorToElementalType (constructor) {
         var i;
         for (i=0;i<arrayTypeToCType.length;i++) {
@@ -107,10 +107,10 @@ RiverTrail.Helper = function () {
         }
         if (elementalType === undefined) {
             // SAH: I fail here as we do not know the type of this typed array. If it had
-            //      a homogeneous type, the constructor would have converted it to a
+            //      a homogeneous type, the constructor would have converted it to a 
             //      typed array.
             throw new TypeError("Cannot infer type for given Parallel Array data container.");
-        }
+        } 
         return elementalType;
     };
 
@@ -119,12 +119,12 @@ RiverTrail.Helper = function () {
         var elementalType;
         //
         // if we already have type information, we return it.
-        //
+        // 
         if (pa.elementalType === undefined) {
             pa.elementalType = inferTypedArrayType(pa.data);
         }
         return {"dimSize": dimSize, "inferredType" : pa.elementalType};
-    };
+    }; 
 
     function stripToBaseType(s) {
         const regExp = /([a-zA-Z ]|\/\*|\*\/)*/;
@@ -165,7 +165,7 @@ RiverTrail.Helper = function () {
             return 8;
         }
     }
-
+    
     var Integer = function Integer(value) {
         this.value = value;
         return this;
@@ -199,7 +199,7 @@ RiverTrail.Helper = function () {
         stack.push(ptr);
         pos = 0;
         while(stack.length !== 0) {
-            var node = stack.pop();
+            var node = stack.pop(); 
             if(!(node instanceof Array)) {
                 throw "Error: Non array node pushed!! Flattening kernel argument failed.";
             }
@@ -239,13 +239,13 @@ RiverTrail.Helper = function () {
         }
 
         var data = this.data = new constructor(len);
-
+        
         var ptrstack = new Array();
         var pstack = new Array();
         var level = 0;
         var wpos = 0, pos = 0;
         ptr = src;
-
+        
         while (wpos < len) {
             if (ptr[pos] instanceof Array) {
                 // check conformity
@@ -260,7 +260,7 @@ RiverTrail.Helper = function () {
                 // copy elements. If we get here, first check that we are at the bottom level
                 // according to the shape
                 if (level != shape.length-1) throw "inhomogeneous array encountered";
-                // if this is uniform, we can just copy the rest of this level without
+                // if this is uniform, we can just copy the rest of this level without 
                 // further checking for arrays
                 for (; pos < ptr.length; pos++,wpos++) {
                     this.data[wpos] = ptr[pos];
@@ -310,7 +310,7 @@ RiverTrail.Helper = function () {
         }
     }
 
-    //
+    // 
     // helper functions for using the narcissus parser to parse a single function. The are used by the
     // driver and by type inference for external references.
     //
@@ -338,14 +338,14 @@ RiverTrail.Helper = function () {
         // have a name. So we have to take a side entry into narcissus here.
         var t = new parser.Tokenizer(kernelJS);
         t.get(true); // grab the first token
-        var ast = parser.FunctionDefinition(t, undefined, false, parser.EXPRESSED_FORM);
+        var ast = parser.FunctionDefinition(t, undefined, false, parser.EXPRESSED_FORM);        
         // Ensure that the function has a valid name to simplify the treatment downstream
         if (!ast.name) ast.name = "nameless";
         return ast;
     };
 
     //
-    // helper to clone the AST for function specialisation. We do not aim to deep clone here, just the
+    // helper to clone the AST for function specialisation. We do not aim to deep clone here, just the 
     // structure of the spine as created by Narcissus. All extra annotations are discarded.
     //
     var cloneAST = function (ast) {
@@ -367,7 +367,7 @@ RiverTrail.Helper = function () {
         var cloneAstArray = function cloneAstArray(array) {
             return array.map(cloneSon);
         };
-        var cloneAstFlow =
+        var cloneAstFlow = 
             dropTypes ?
             function nothing() { return undefined; } :
             function cloneFlowNode(flow) {
@@ -375,7 +375,7 @@ RiverTrail.Helper = function () {
                 if (!result) {
                     // ast nodes are fixed up later. everything else is lut copied
                     if (flow instanceof RiverTrail.Typeinference.FFunction) {
-                        result = new RiverTrail.Typeinference.FFunction(cloneAstArray(flow.params), cloneAstType(flow.result), flow.root, undefined /* patch up later */);
+                        result = new RiverTrail.Typeinference.FFunction(cloneAstArray(flow.params), cloneAstType(flow.result), flow.root, undefined /* patch up later */); 
                     } else if (flow instanceof RiverTrail.Typeinference.FCall) {
                         // We duplicate the call flow node, but not the function frame it points to, as we do not
                         // copy the called function, either. We need to update the reference counter, though!
@@ -389,11 +389,11 @@ RiverTrail.Helper = function () {
 
                     copyLut[flow.label] = result;
                 }
-
+                    
                 return result;
             };
-        var cloneAstType =
-            dropTypes ?
+        var cloneAstType = 
+            dropTypes ? 
             function nothing() { return undefined; } :
             function cloneAstType(type) {
                 var result = copyLut[type.label];
@@ -413,7 +413,7 @@ RiverTrail.Helper = function () {
                 if (ast.cloneLabel && (ast.cloneLabel > cntMin)) {
                     // we have a previous copy
                     return varLut[ast.cloneLabel-cntMin];
-                }
+                } 
             }
             var result = new Narcissus.parser.Node(ast.tokenizer);
             for (var key in ast) {

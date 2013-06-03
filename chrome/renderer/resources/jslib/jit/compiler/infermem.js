@@ -2,25 +2,25 @@
  * Copyright (c) 2011, Intel Corporation
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are met:
  *
- * - Redistributions of source code must retain the above copyright notice,
+ * - Redistributions of source code must retain the above copyright notice, 
  *   this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
+ * - Redistributions in binary form must reproduce the above copyright notice, 
+ *   this list of conditions and the following disclaimer in the documentation 
  *   and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
@@ -305,7 +305,7 @@ RiverTrail.InferMem = function () {
                 break;
             case ASSIGN:
                 // children[0] is the left hand side, children[1] is the right hand side.
-                // both can be expressions.
+                // both can be expressions. 
                 infer(ast.children[0], memVars, ins, outs);
                 infer(ast.children[1], memVars, ins, outs);
                 switch (ast.children[0].type) {
@@ -313,8 +313,8 @@ RiverTrail.InferMem = function () {
                         // a = expr
                         //
                         // case 1:
-                        // If <expr> is in the __private address space, then if <a> is an in and out var we have to copy,
-                        // as the memory we have allocated for <expr> could potentially be reused in the next iteration
+                        // If <expr> is in the __private address space, then if <a> is an in and out var we have to copy, 
+                        // as the memory we have allocated for <expr> could potentially be reused in the next iteration 
                         // of the loop before <a> has been read.
                         //
                         // case 2:
@@ -344,12 +344,12 @@ RiverTrail.InferMem = function () {
                                 // Set the primary memory buffer for this node to be the
                                 // top-level buffer
                                 ast.allocatedMem = ast.memBuffers.list[0];
-                                debug && console.log("Total AST allocations: ", ast.memBuffers.size, ast.memBuffers.list.length);
+                                debug && console.log("Total AST allocations: ", ast.memBuffers.size, ast.memBuffers.list.length); 
                             }
                         }
                         break;
                     case INDEX:
-                        // case of a[iv] = expr.
+                        // case of a[iv] = expr. 
                         break;
                     case DOT:
                         // Support for updates on object properties.
@@ -361,8 +361,8 @@ RiverTrail.InferMem = function () {
                         break;
                 }
                 break;
-
-            //
+                
+            // 
             // expressions
             //
 
@@ -371,13 +371,13 @@ RiverTrail.InferMem = function () {
                 // the then expression, third child the else expression
                 infer(ast.children[0], memVars, ins, outs);
                 var thenMem = new MemList();
-                infer(ast.children[1], thenMem, ins, outs);
+                infer(ast.children[1], thenMem, ins, outs); 
                 var elseMem = new MemList();
                 infer(ast.children[2], elseMem, ins, outs);
                 thenMem.overlay(elseMem);
                 memVars.join(thenMem);
                 break;
-
+                
             // literals
             case IDENTIFIER:
             case THIS:
@@ -398,11 +398,11 @@ RiverTrail.InferMem = function () {
                     ast.allocatedMem = memVars.allocate(RiverTrail.Helper.getOpenCLSize(ast.typeInfo.OpenCLType) * ast.typeInfo.properties.shape[0], "ARRAY_INIT");
                 }
                 // fallthrough;
-
+                
             // stuff where we just look at the children
             case COMMA:
             case INCREMENT:
-            case PLUS:
+            case PLUS: 
             case DECREMENT:
             case MINUS:
             case MUL:
@@ -421,8 +421,8 @@ RiverTrail.InferMem = function () {
             case RSH:
             case URSH:
             case DIV:
-            case MOD:
-            case AND:
+            case MOD:    
+            case AND: 
             case OR:
             case NOT:
             case UNARY_PLUS:
@@ -430,7 +430,7 @@ RiverTrail.InferMem = function () {
             case BITWISE_NOT:
             case DOT:
             case INDEX:
-            case LIST:
+            case LIST:      
             case CAST:
             case FLATTEN:
             case TOINT32:
@@ -438,7 +438,7 @@ RiverTrail.InferMem = function () {
                     ast.children.forEach( function (child) { infer(child, memVars, ins, outs); });
                 }
                 break;
-            case CALL:
+            case CALL: 
                 if (ast.children) {
                     if(ast.children[0].type === DOT && ast.children[0].children[0].value === "RiverTrailUtils") {
                         switch (ast.children[0].children[1].value) {
@@ -456,12 +456,12 @@ RiverTrail.InferMem = function () {
                 if(ast.typeInfo.name === "InlineObject") {
                     allocateObjMem(ast, memVars);
                 }
-                // If I am returning an Array space needs to be allocated for it in the caller and
+                // If I am returning an Array space needs to be allocated for it in the caller and 
                 // the name of the space should be left in the CALL nodes allocatedMem field so that when
                 // I generate the call it is available. However, if this method does return a pointer
                 // to some existing data, like |get| on ParallelArray, the type inference will have
                 // left an isShared annotation and no memory needs to be allocated.
-                else if (!ast.typeInfo.isScalarType() && !ast.typeInfo.properties.isShared) {
+                else if (!ast.typeInfo.isScalarType() && !ast.typeInfo.properties.isShared) { 
                     // This call returns a nested array. The caller needs to allocate enough
                     // memory for this array and initialize the pointers in
                     // the allocated buffer to create a structure that the
@@ -471,7 +471,7 @@ RiverTrail.InferMem = function () {
                 }
                 break;
 
-            //
+            // 
             // unsupported stuff here
             //
             case GETTER:

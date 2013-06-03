@@ -2,25 +2,25 @@
  * Copyright (c) 2011, Intel Corporation
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are met:
  *
- * - Redistributions of source code must retain the above copyright notice,
+ * - Redistributions of source code must retain the above copyright notice, 
  *   this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
+ * - Redistributions in binary form must reproduce the above copyright notice, 
+ *   this list of conditions and the following disclaimer in the documentation 
  *   and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
@@ -34,17 +34,15 @@
 // It basically hides everything in the local scope of the function, executes the function and
 // returns only the external needed outside of the function.
 
-
-
 var useFF4Interface;
 var useCrInterface;
 
 RiverTrail.compiler = (function () {
-    // This is the compiler driver proper.
-
+    // This is the compiler driver proper. 
+    
     // The ast is opaque at this point so the Narcissus constants aren't needed.
     var inferPAType = RiverTrail.Helper.inferPAType;
-
+    
     // whether to use kernel caching or not
     var useKernelCaching = true;
     // whether to cache OpenCL buffers
@@ -52,7 +50,7 @@ RiverTrail.compiler = (function () {
 
     var suppressOpenCL = false;
 
-    var openCLContext;
+    var openCLContext; 
     var dpoInterface;
     var dpoPlatform;
     try {
@@ -79,7 +77,7 @@ RiverTrail.compiler = (function () {
             dpoInterface = new DPOInterface();
         else if (useCrInterface)
             dpoInterface = new CInterface();
-        dpoPlatform = dpoInterface.getPlatform();
+        dpoPlatform = dpoInterface.getPlatform(); 
         openCLContext = dpoPlatform.createContext();
     } catch (e) {
         console.log ("Cannot initialise OpenCL interface. Please check the whether the extension was installed and try again.");
@@ -117,7 +115,7 @@ RiverTrail.compiler = (function () {
         // First convert all array arguments into suitable flat representations that can be passed to
         // the OpenCL side
 
-        args = Array.prototype.map.call(args,
+        args = Array.prototype.map.call(args, 
                                      function (object) {
                                          if (object instanceof Array) {
                                              if ((typeof(openCLContext.canBeMapped) === 'function') && (openCLContext.canBeMapped(object))) {
@@ -137,16 +135,16 @@ RiverTrail.compiler = (function () {
                 var cacheEntry = getCacheEntry(f, construct, paSource, argumentTypes, lowPrecision, rankOrShape);
                 // try and find a matching kernel from previous runs
                 if (cacheEntry != null) {
-                    paResult = RiverTrail.compiler.runOCL(paSource, cacheEntry.kernel, cacheEntry.ast, f,
-                                      construct, rankOrShape, args, argumentTypes, lowPrecision,
+                    paResult = RiverTrail.compiler.runOCL(paSource, cacheEntry.kernel, cacheEntry.ast, f, 
+                                      construct, rankOrShape, args, argumentTypes, lowPrecision, 
                                       enable64BitFloatingPoint, useBufferCaching, useKernelCaching);
                     return paResult;
                 }
             } else {
-                // remove cache
+                // remove cache 
                 f.openCLCache = undefined;
             }
-        }
+        } 
         //
         // NOTE: we only get here if caching has failed!
         // We need to pass in argumentTypes.
@@ -155,15 +153,15 @@ RiverTrail.compiler = (function () {
             // create empty cache
             f.openCLCache = [];
         }
-
+                        
         try {
             ast = parse(paSource, construct, rankOrShape, f.toString(), args, lowPrecision); // parse, no code gen
             kernelString = RiverTrail.compiler.codeGen.compile(ast, paSource, rankOrShape, construct); // Creates an OpenCL kernel function
         } catch (e) {
             RiverTrail.Helper.debugThrow(e);
         }
-
-        if (RiverTrail.compiler.verboseDebug) {
+        
+        if (RiverTrail.compiler.verboseDebug) {    
             console.log("::parseGenRunOCL:kernelString: ", kernelString);
             console.log("::parseGenRunOCL:args: ", JSON.stringify(args));
         }
@@ -174,7 +172,7 @@ RiverTrail.compiler = (function () {
         } else {
             // what arg should be used, args seems correct.?
             try {
-                paResult = RiverTrail.compiler.runOCL(paSource, kernelString, ast, f, construct, rankOrShape, args,
+                paResult = RiverTrail.compiler.runOCL(paSource, kernelString, ast, f, construct, rankOrShape, args, 
                                                 argumentTypes, lowPrecision, enable64BitFloatingPoint, useBufferCaching, useKernelCaching);
             } catch (e) {
                 try {
@@ -197,7 +195,7 @@ RiverTrail.compiler = (function () {
         try {
             RiverTrail.Typeinference.analyze(ast, paSource, construct, rank, args, lowPrecision);
             RiverTrail.RangeAnalysis.analyze(ast, paSource, construct, rankOrShape, args);
-            RiverTrail.RangeAnalysis.propagate(ast);
+            RiverTrail.RangeAnalysis.propagate(ast, construct);
             RiverTrail.InferBlockFlow.infer(ast);
             RiverTrail.InferMem.infer(ast);
         } catch (e) {
@@ -205,7 +203,7 @@ RiverTrail.compiler = (function () {
         }
         return ast;
     }
-
+    
     var getCacheEntry = function (f, construct, paSource, argumentTypes, lowPrecision, rankOrShape) {
         var argumentMatches = function (argTypeA, argTypeB) {
             return ((argTypeA.inferredType === argTypeB.inferredType) &&
@@ -265,13 +263,13 @@ RiverTrail.compiler = (function () {
                 //      must be a dense, homogeneous JavaScript array. Those are always double arrays
                 //      and we assume the shape can be derived by looking at the first element in
                 //      each dimension.
-                // NOTE: I use /* jsval */ double as type to make sure these are not confused with
+                // NOTE: I use /* jsval */ double as type to make sure these are not confused with 
                 //       ordinary arrays when checking for matching signatures.
                 argumentTypes.push({ inferredType: "/* jsval */ double", dimSize: function makeShape(a, r) { if (a instanceof Array) { r.push(a.length); makeShape(a[0], r); } return r;}(argument, []) });
             } else if (RiverTrail.Helper.isTypedArray(argument)) {
                 argumentTypes.push({ inferredType: RiverTrail.Helper.inferTypedArrayType(argument), dimSize: [argument.length] });
             } else if (argument instanceof RiverTrail.Helper.Integer) {
-                // These are special integer values used for offsets and the like.
+                // These are special integer values used for offsets and the like. 
                 argumentTypes.push({ inferredType: "int", dimSize: [] });
             } else if (typeof (argument) === "number") {
                 // scalar values are treated as floats
@@ -286,7 +284,7 @@ RiverTrail.compiler = (function () {
         return argumentTypes;
     };
     function astTypeConverter (key, value) {
-        if (key === 'type' && (typeof value === 'number') ) {
+        if (key === 'type' && (typeof value === 'number') ) { 
             if (opTypeNames[tokens[value]]) {
                 return opTypeNames[tokens[value]];
             }
@@ -300,7 +298,7 @@ RiverTrail.compiler = (function () {
             return '-- cyclic --';
         }
         return value;
-    }
+    }   
 
     //
     // Method to dump the current ast
@@ -313,12 +311,12 @@ RiverTrail.compiler = (function () {
             console.log(RiverTrail.Helper.wrappedPP(ast));
         }
     }
-
+    
     var equalsShape = function equalsShape (shapeA, shapeB) {
         return ((shapeA.length == shapeB.length) &&
                 Array.prototype.every.call(shapeA, function (a,idx) { return a == shapeB[idx];}));
     };
-
+    
 // end code from parallel array
     return {
         verboseDebug: false,

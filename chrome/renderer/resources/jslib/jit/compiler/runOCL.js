@@ -2,29 +2,28 @@
  * Copyright (c) 2011, Intel Corporation
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are met:
  *
- * - Redistributions of source code must retain the above copyright notice,
+ * - Redistributions of source code must retain the above copyright notice, 
  *   this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
+ * - Redistributions in binary form must reproduce the above copyright notice, 
+ *   this list of conditions and the following disclaimer in the documentation 
  *   and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
 
 // Executes the kernel function with the ParallelArray this and the args for the elemental function
 // paSource     - 'this' inside the kernel
@@ -96,13 +95,16 @@ RiverTrail.compiler.runOCL = function () {
                     // we already have an OpenCL value
                     args.push(object.data);
                 } else if (RiverTrail.Helper.isTypedArray(object.data)) {
-                    if ((object.cachedOpenCLMem === undefined)) {
+                    var memObj;
+                    if (object.cachedOpenCLMem) {
+                        memObj = object.cachedOpenCLMem;
+                    } else {
                         // we map this argument
-                        object.cachedOpenCLMem = RiverTrail.compiler.openCLContext.mapData(object.data);
+                        memObj = RiverTrail.compiler.openCLContext.mapData(object.data);
                     }
-                    args.push(object.cachedOpenCLMem);
-                    if (!useBufferCaching) {
-                        object.cachedOpenCLMem = undefined;
+                    args.push(memObj);
+                    if (useBufferCaching) {
+                        object.cachedOpenCLMem = memObj;
                     }
                 } else {
                     // We have a regular array as data container. There is no point trying
@@ -155,23 +157,31 @@ RiverTrail.compiler.runOCL = function () {
             // See scan for how this is supposed to work
             // first we ensure that the shape of what we compute is the shape of what is expected
             var resShape;
-            if (type.properties) {
-                resShape = iterSpace.concat(ast.typeInfo.result.getOpenCLShape());
-            } else {
+            if (ast.typeInfo.result.isScalarType()) {
                 resShape = iterSpace;
+            } else {
+                resShape = iterSpace.concat(ast.typeInfo.result.getOpenCLShape());
             }
-            if (!equalsShape(resShape, paSource.updateInPlaceShape)) {
+            if (resShape.some(function (e,i) { return e !== paSource.updateInPlaceShape[i];})) {
                 // throwing this will revert the outer scan to non-destructive mode
                 throw new Error("shape mismatch during update in place!");
             }
-            if (++paSource.updateInPlaceUses !== 1) {
+            if (++paSource.updateInPlacePA.updateInPlaceUses !== 1) {
                 throw new Error("preallocated memory used more than once!");
             }
             if (!(paSource.updateInPlacePA.data instanceof InterfaceData)) {
-                paSource.updateInPlacePA.data = RiverTrail.compiler.openCLContext.mapData(paSource.updateInPlacePA.data);
+                if (paSource.updateInPlacePA.cachedOpenCLMem) {
+                    paSource.updateInPlacePA.data = paSource.updateInPlacePA.cachedOpenCLMem;
+                    delete paSource.updateInPlacePA.cachedOpenCLMem;
+                } else {
+                    paSource.updateInPlacePA.data = RiverTrail.compiler.openCLContext.mapData(paSource.updateInPlacePA.data);
+                    if (useBufferCaching) {
+                        paSource.updateInPlacePA.cachedOpenCLMem = paSource.updateInPlacePA.data;
+                    }
+                }
             }
-            resultMem = { mem: paSource.updateInPlacePA.data, shape: resShape, type: RiverTrail.Helper.stripToBaseType(type.OpenCLType) };
-            kernelArgs.push(resultMem);
+            resultMem = {mem: paSource.updateInPlacePA.data, shape: resShape, type: RiverTrail.Helper.stripToBaseType(ast.typeInfo.result.OpenCLType), offset: paSource.updateInPlaceOffset};
+            kernelArgs.push(resultMem.mem);
             kernelArgs.push(new RiverTrail.Helper.Integer(paSource.updateInPlaceOffset));
         } else {
             var allocateAndMapResult = function (type) {
@@ -187,10 +197,10 @@ RiverTrail.compiler.runOCL = function () {
                 var memObj = RiverTrail.compiler.openCLContext.allocateData(new template(1), shapeToLength(resShape));
                 kernelArgs.push(memObj);
                 kernelArgs.push(new RiverTrail.Helper.Integer(0));
-                return { mem: memObj, shape: resShape, type: resultElemType };
+                return {mem: memObj, shape: resShape, type: resultElemType, offset: 0};
             };
 
-            // We allocate whatever the result type says. To ensure portability of
+            // We allocate whatever the result type says. To ensure portability of 
             // the extension, we need a template typed array. So lets just create one!
             if (ast.typeInfo.result.isObjectType("InlineObject")) {
                 // we have multiple return values
@@ -288,12 +298,18 @@ RiverTrail.compiler.runOCL = function () {
         }
         if (resultMem.mem && (resultMem.mem instanceof InterfaceData)) {
             // single result
-            paResult = new ParallelArray(resultMem.mem, resultMem.shape, resultMem.type);
+            paResult = new ParallelArray(resultMem.mem, resultMem.shape, resultMem.type, resultMem.offset);
+            if (useBufferCaching) {
+                paResult.cachedOpenCLMem = resultMem.mem;
+            }
         } else {
             // multiple results
             var multiPA = {};
             for (var name in resultMem) {
-                multiPA[name] = new ParallelArray(resultMem[name].mem, resultMem[name].shape, resultMem[name].type);
+                multiPA[name] = new ParallelArray(resultMem[name].mem, resultMem[name].shape, resultMem[name].type, resultMem[name].offset);
+                if (useBufferCaching) {
+                    multiPA[name].cachedOpenCLMem = resultMem[name].mem;
+                }
             }
             paResult = new IBarfAtYouUnlessYouUnzipMe(multiPA);
         }
@@ -331,7 +347,7 @@ RiverTrail.compiler.runOCL = function () {
     IBarfAtYouUnlessYouUnzipMe.prototype.getData = barf("getData");
     IBarfAtYouUnlessYouUnzipMe.prototype.getArray = barf("getArray");
 
-    // Given the shape of an array return the number of elements. Duplicate from ParallelArray.js
+    // Given the shape of an array return the number of elements. Duplicate from ParallelArray.js 
     var shapeToLength = function shapeToLength(shape) {
         var i;
         var result;

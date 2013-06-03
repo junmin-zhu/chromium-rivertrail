@@ -2,25 +2,25 @@
  * Copyright (c) 2011, Intel Corporation
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are met:
  *
- * - Redistributions of source code must retain the above copyright notice,
+ * - Redistributions of source code must retain the above copyright notice, 
  *   this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
+ * - Redistributions in binary form must reproduce the above copyright notice, 
+ *   this list of conditions and the following disclaimer in the documentation 
  *   and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
@@ -41,7 +41,7 @@ RiverTrail.Typeinference = function () {
 
     var inferPAType = RiverTrail.Helper.inferPAType;
     var nameGen = RiverTrail.Helper.nameGen;
-
+    
     const debug = false;
     const allowGlobalFuns = true; // Set to true so kernel functions can call global functions.
     const lazyJSArrayCheck = true; // check for homogeneity of JS Arrays at runtime
@@ -60,7 +60,7 @@ RiverTrail.Typeinference = function () {
     }
     var reportBug = RiverTrail.Helper.reportBug;
 
-    //
+    // 
     // tree copying
     //
     var cloneFunctionNoTypes = RiverTrail.Helper.cloneFunction(true);
@@ -121,7 +121,7 @@ RiverTrail.Typeinference = function () {
                  (this.name === name)));
     };
     Tp.isArrayishType = function () { // checks whether the type is an array like type
-        return this.isObjectType("Array") || this.isObjectType("JSArray") || this.isObjectType("ParallelArray");
+        return this.isObjectType(TObject.ARRAY) || this.isObjectType(TObject.JSARRAY) || this.isObjectType(TObject.PARALLELARRAY);
     };
     Tp.isBottomType = function () {
         return (this.kind === Type.BOTTOM);
@@ -228,7 +228,7 @@ RiverTrail.Typeinference = function () {
     };
 
     var TFp = TFunction.prototype = new Type(Type.FUNCTION);
-    TFp.toString = function () {
+    TFp.toString = function () { 
         var s = "(";
         for (var pos = 0; pos < this.parameters.length; pos++) {
             s = s + (pos > 0 ? ", " : "") + this.parameters[pos].toString();
@@ -275,7 +275,7 @@ RiverTrail.Typeinference = function () {
     };
     TObject.deriveObjectType = function (obj) {
         var name, key;
-        var isInstance = function isInstance (x) {
+        var isInstance = function isInstance (x) { 
             return (obj instanceof x);
         };
         for (key in this.prototype.registry) {
@@ -294,10 +294,10 @@ RiverTrail.Typeinference = function () {
 
     TOp.registry = {};              // mapping from object names to the
     TOp.registry.__proto__ = null;  // handler that contains implementations
-                                    // for abstract interpretation of the
+                                    // for abstract interpretation of the 
                                     // object's methods
 
-    TOp.toString = function () {
+    TOp.toString = function () { 
         var s = "Object: " + this.name + "[";
         for (var key in this.properties) {
            s = s + key + ":" + (this.properties[key] ? this.properties[key].toString() : "undefined") + ", ";
@@ -364,13 +364,13 @@ RiverTrail.Typeinference = function () {
     //
     // Bottom type for error states
     //
-    var TBottom = function () {
+    var TBottom = function () { 
         this.label = labelGen();
     };
     var TBp = TBottom.prototype = new Type(Type.BOTTOM);
     TBp.equals = function (other) { return false; };
 
-    //
+    // 
     // type environment AKA symbol table
     //
     var TEnv = function (env, functionFrame) {
@@ -452,13 +452,20 @@ RiverTrail.Typeinference = function () {
             this.bindings[name].initialized = false;
         }
     };
+    TEp.toString = function () {
+        var s = "";
+        for (var name in this.bindings) {
+            s = s + ((s === "") ? "" : ", ") + name + " => " + this.bindings[name].type.toString();
+        }
+        return "{{" + s + "}}";
+    };
 
     // this construction eases debugging :-)
     TEp.__defineGetter__("accu", function () {
                 return this._accu || null;
             });
-    TEp.__defineSetter__("accu", function (val) {
-                this._accu = val;
+    TEp.__defineSetter__("accu", function (val) { 
+                this._accu = val; 
             });
     TEp.resetAccu = function () {
         this._accu = null;
@@ -507,16 +514,20 @@ RiverTrail.Typeinference = function () {
     };
 
     TEp.emitDeclarations = function (renamer) {
-        s = "";
+        var s = "";
         for (var name in this.bindings) {
             var type = this.bindings[name].type;
-            // only declare variables that are actually used (and thus have a type)
+            // only declare variables that are actually used (and thus have a type) 
             if (type) {
                 s = s + " " + type.getOpenCLAddressSpace() + " " + type.OpenCLType + " " + (renamer ? renamer(name) : name) + "; ";
-            }
+            } 
         }
         return s;
     };
+
+                    
+
+
     //
     // Root environment which models the accesible global scope
     //
@@ -524,7 +535,7 @@ RiverTrail.Typeinference = function () {
     rootEnvironment.bind("Math");
     rootEnvironment.update("Math", new TObject("Math"));
 
-    //
+    // 
     // Handlers for built in classes
     //
     TOp.registry["Math"] = {
@@ -567,7 +578,7 @@ RiverTrail.Typeinference = function () {
                 case "max":
                 case "min":
                     // number, ..., number -> number
-                    argtypes.forEach( function (t, idx) { t.isArithType() || reportError("argument " + (idx + 1) +
+                    argtypes.forEach( function (t, idx) { t.isArithType() || reportError("argument " + (idx + 1) + 
                                                                                          " to Math." + name + " is not " +
                                                                                          "a number", ast); });
                     type = new TLiteral(TLiteral.NUMBER);
@@ -597,7 +608,7 @@ RiverTrail.Typeinference = function () {
                 case "SQRT2":
                     type = new TLiteral(TLiteral.NUMBER);
                     break;
-
+                    
                 default:
                     reportError("unknown property `Math." + name + "`", ast);
             }
@@ -655,12 +666,22 @@ RiverTrail.Typeinference = function () {
                     return false;
                 if(!fields[idx].equals(other_fields[idx]))
                     return false;
+                /*
+                if(fields[idx] === other_fields[idx])
+                    continue;
+                if(fields[idx].OpenCLType !== other_fields[idx].OpenCLType)
+                    return false;
+                // The following only compares the outer shape!
+                // Fix this to compare the entire shape array
+                if(fields[idx].properties.shape !== other_fields[idx].properties.shape)
+                    return false;
+                */
             }
             return true;
         }
     };
 
-    TOp.registry["Array"] = {
+    TOp.registry[TObject.ARRAY] = {
         methodCall : function(thisType, name, tEnv, fEnv, ast) {
             switch (name) {
                 // mutators
@@ -697,7 +718,7 @@ RiverTrail.Typeinference = function () {
             return type;
         },
         constructor : undefined,
-        constructors : [Float64Array, Float32Array, Uint32Array, Int32Array,
+        constructors : [Float64Array, Float32Array, Uint32Array, Int32Array, 
                         Uint16Array, Int16Array, Uint8ClampedArray, Uint8Array, Int8Array,
                         RiverTrail.Helper.FlatArray],
         makeType : function (val) {
@@ -731,10 +752,10 @@ RiverTrail.Typeinference = function () {
             var elemType = this.properties.elements;
             if (elemType instanceof TLiteral) {
                 this.OpenCLType = this.properties.elements.OpenCLType + "*";
-            } else if( (elemType.properties.addressSpace === "__private") && (elemType.isObjectType("Array") || elemType.isObjectType("ParallelArray"))) {
+            } else if( (elemType.properties.addressSpace === "__private") && (elemType.isObjectType(TObject.ARRAY) || elemType.isObjectType(TObject.PARALLELARRAY))) {
                 // JS : Generate right type for nested local arrays (JS Arrays and ParallelArrays)
                 this.OpenCLType = elemType.OpenCLType + "*";
-            } else if (elemType.isObjectType("Array") || elemType.isObjectType("ParallelArray")) {
+            } else if (elemType.isObjectType(TObject.ARRAY) || elemType.isObjectType(TObject.PARALLELARRAY)) {
                 // TODO: Global arrays of element type T should have type T* here
                 //
                 this.OpenCLType = elemType.OpenCLType;
@@ -761,9 +782,9 @@ RiverTrail.Typeinference = function () {
         }
     };
 
-    TOp.registry["JSArray"] = {
-        methodCall : TOp.registry["Array"].methodCall,
-        propertySelection : TOp.registry["Array"].propertySelection,
+    TOp.registry[TObject.JSARRAY] = {
+        methodCall : TOp.registry[TObject.ARRAY].methodCall,
+        propertySelection : TOp.registry[TObject.ARRAY].propertySelection,
         constructor : Array,
         makeType : function (val) {
             var type;
@@ -796,13 +817,13 @@ RiverTrail.Typeinference = function () {
             /* this type is hardwired */
             this.OpenCLType = "/* jsval */ double*";
         },
-        getOpenCLShape : TOp.registry["Array"].getOpenCLShape,
-        getOpenCLSize : TOp.registry["Array"].getOpenCLSize,
-        equals : TOp.registry["Array"].equals,
-        setAddressSpace : TOp.registry["Array"].setAddressSpace
+        getOpenCLShape : TOp.registry[TObject.ARRAY].getOpenCLShape,
+        getOpenCLSize : TOp.registry[TObject.ARRAY].getOpenCLSize,
+        equals : TOp.registry[TObject.ARRAY].equals,
+        setAddressSpace : TOp.registry[TObject.ARRAY].setAddressSpace
     };
 
-    TOp.registry["ParallelArray"] = {
+    TOp.registry[TObject.PARALLELARRAY] = {
         methodCall : function(thisType, name, tEnv, fEnv, ast) {
             // "use strict";
             var type;
@@ -977,7 +998,7 @@ RiverTrail.Typeinference = function () {
                 // them, we can safely scrap those here.
                 ast = ast.children[0];
                 // fallthrough!
-
+                
             case SCRIPT:
                 // create a new type environment for local bindings
                 tEnv = new TEnv(tEnv);
@@ -992,7 +1013,7 @@ RiverTrail.Typeinference = function () {
                         tEnv.bind(f.name);
                         });
                 // add all locally declared functions to the function store. Other than the variable environment, this
-                // is about storing their code in case we find a call.
+                // is about storing their code in case we find a call. 
                 fEnv = new FEnv(fEnv);
                 ast.funDecls.forEach(function (f) {fEnv.add(f);});
                 ast.children.map(function (ast) { return drive(ast, tEnv, fEnv); });
@@ -1059,7 +1080,7 @@ RiverTrail.Typeinference = function () {
                 ast.children.map(function (ast) {
                                      if (ast.initializer) {
                                          ast.initializer = drive(ast.initializer, tEnv, fEnv);
-                                             tEnv.update(ast.name, tEnv.accu);
+                                             tEnv.update(ast.name, tEnv.accu); 
                                              ast.typeInfo = tEnv.accu;
                                              tEnv.resetAccu();
                                      }
@@ -1068,7 +1089,7 @@ RiverTrail.Typeinference = function () {
                 break;
             case ASSIGN:
                 // children[0] is the left hand side, children[1] is the right hand side.
-                // both can be expressions.
+                // both can be expressions. 
                 ast.children[1] = drive(ast.children[1], tEnv, fEnv);
                 left = ast.children[0];
                 switch (ast.children[0].type) {
@@ -1082,11 +1103,11 @@ RiverTrail.Typeinference = function () {
                         // 1) infer types for lhs
                         left = drive(left, tEnv, fEnv);
                         // 2) figure out what <expr> is. Has to yield an Array object of some sort.
-                        left.children[0].typeInfo.isObjectType("Array") || reportError("illegal object in lhs selection; type seen was "
+                        left.children[0].typeInfo.isObjectType(TObject.ARRAY) || reportError("illegal object in lhs selection; type seen was " 
                                                                                        + left.children[0].typeInfo, ast);
                         // 3) ensure the update is monomorphic
-                        left.typeInfo.equals(ast.children[1].typeInfo) || reportError("mutation of array invalidates types: "
-                                                                                      + left.typeInfo + " updated with "
+                        left.typeInfo.equals(ast.children[1].typeInfo) || reportError("mutation of array invalidates types: " 
+                                                                                      + left.typeInfo + " updated with " 
                                                                                       + ast.children[1].typeInfo, ast);
                         // 4) the result of the assignment is the rhs...
                         tEnv.accu = ast.children[0].typeInfo.clone();
@@ -1098,7 +1119,7 @@ RiverTrail.Typeinference = function () {
                         // 2) Check if the field (lhs's child 1) is valid
                         // 3) Check if the update is monomorphic
                         left = drive(left, tEnv, fEnv);
-                        if(!left.children[0].typeInfo.isObjectType("InlineObject") ||
+                        if(!left.children[0].typeInfo.isObjectType("InlineObject") || 
                                 !left.children[0].typeInfo.properties.fields.hasOwnProperty(left.children[1].value))
                             reportError("Invalid field " + left.children[1].value + " referenced on object " + left.children[0].value);
                         tEnv.accu = ast.children[0].typeInfo.clone();
@@ -1112,8 +1133,8 @@ RiverTrail.Typeinference = function () {
                 }
                 // leave the last type in the accu. Assignments can be expressions :)
                 break;
-
-            //
+                
+            // 
             // expressions
             //
             case COMMA:
@@ -1135,9 +1156,9 @@ RiverTrail.Typeinference = function () {
                 tEnv.accu.registerFlow(right);
                 tEnv.accu.registerFlow(left);
                 break;
-
+                
             // binary operations on all literals
-            case PLUS:
+            case PLUS: 
                 // we do not support strings yet, so this case is the same as numbers
                 // fallthrough
 
@@ -1159,7 +1180,7 @@ RiverTrail.Typeinference = function () {
             case MINUS:
             case MUL:
             case DIV:
-            case MOD:
+            case MOD:    
                 ast.children[0] = drive(ast.children[0], tEnv, fEnv);
                 tEnv.accu.isArithType() || reportError("first argument not a number (found " + tEnv.accu.toString() + ")", ast);
                 ast.children[1] = drive(ast.children[1], tEnv, fEnv);
@@ -1208,7 +1229,8 @@ RiverTrail.Typeinference = function () {
             case THIS:
                 var idType = tEnv.lookup(ast.value) || reportError("unbound variable: " + ast.value, ast);
                 idType.initialized || reportError("variable " + ast.value + " might be uninitialized", ast);
-                tEnv.accu = idType.type;
+                tEnv.accu = idType.type.clone();
+                tEnv.accu.registerFlow(idType.type);
                 break;
             case DOT:
                 ast.children[0] = drive(ast.children[0], tEnv, fEnv);
@@ -1230,11 +1252,11 @@ RiverTrail.Typeinference = function () {
                 ast.children[1] = drive(ast.children[1], tEnv, fEnv);
                 tEnv.accu.isArithType() || reportError("index not a number (found " + tEnv.accu.toString() + ")", ast);
                 ast.children[0] = drive(ast.children[0], tEnv, fEnv);
-                if (tEnv.accu.isObjectType("Array") || tEnv.accu.isObjectType("JSArray")) {
+                if (tEnv.accu.isObjectType(TObject.ARRAY) || tEnv.accu.isObjectType(TObject.JSARRAY)) {
                     left = tEnv.accu.properties.elements.clone();
                     left.registerFlow(tEnv.accu);
                     tEnv.accu = left;
-                } else if (tEnv.accu.isObjectType("ParallelArray")) {
+                } else if (tEnv.accu.isObjectType(TObject.PARALLELARRAY)) {
                     if (tEnv.accu.properties.shape.length === 1) {
                         // result is a scalar
                         left = tEnv.accu.properties.elements.clone();
@@ -1262,7 +1284,7 @@ RiverTrail.Typeinference = function () {
                 }
                 (left.length > 0) || reportError("empty arrays are not supported", ast);
                 left.reduce(function(a,b) { a.equals(b) || reportError("inhomogeneous element types in array initialiser", ast); return a;});
-                tEnv.accu = new TObject("Array");
+                tEnv.accu = new TObject(TObject.ARRAY);
                 tEnv.accu.properties.elements = left[0].clone();
                 tEnv.accu.properties.shape = [ast.children.length];
                 tEnv.accu.updateOpenCLType();
@@ -1305,7 +1327,7 @@ RiverTrail.Typeinference = function () {
                                // so this is not a local function. first make sure it is not a local variable
                                !tEnv.lookup(fname) || reportError("not a function `" + fname + "`", ast);
                                // CHEAT: we would have to inspect the current functions closure here but we cannot. So we just
-                               //        take whatever the name is bound to in the current scope.
+                               //        take whatever the name is bound to in the current scope. 
                                //        This should at least be the global scope, really...
                                var obj = eval(fname) || reportError("unknown function `" + fname + "`", ast);
                                (typeof(obj) === 'function') || reportError("not a function `" + fname + "`", ast);
@@ -1334,8 +1356,8 @@ RiverTrail.Typeinference = function () {
                                 // specialize
                                 fun = cloneFunctionNoTypes(fun);
                             }
-                        }
-
+                        } 
+                        
                         if (!resType) {
                             // Ensure that the function has a unique, valid name to simplify
                             // the treatment downstream
@@ -1365,7 +1387,8 @@ RiverTrail.Typeinference = function () {
                             fun.flowFrame = new FFunction(innerArgT, resType, fun);
                             fun.typeInfo = new TFunction(innerArgT, resType);
                             fun.flowRoots = innerTEnv.getRoots();
-                            //debug && console.log(fun.name + " has type " + fun.typeInfo.toString());
+                            fun.symbols = innerTEnv;
+                            debug && console.log(fun.name + " has type " + fun.typeInfo.toString());
                         }
                         // tie the arguments to the function call
                         ast.callFrame = new FCall(argT, fun.flowFrame, resType.clone(), ast);
@@ -1383,7 +1406,7 @@ RiverTrail.Typeinference = function () {
                 break;
 
             // argument lists
-            case LIST:
+            case LIST:      
                 left = [];
                 for (var idx in ast.children) {
                     ast.children[idx] = drive(ast.children[idx], tEnv, fEnv);
@@ -1394,7 +1417,7 @@ RiverTrail.Typeinference = function () {
                 tEnv.accu = left;
                 break;
 
-            //
+            // 
             // unsupported stuff here
             //
             case GETTER:
@@ -1430,25 +1453,25 @@ RiverTrail.Typeinference = function () {
                 if ((ast.children[0].type === IDENTIFIER) &&
                     (ast.children[0].value === "ParallelArray") &&
                     (ast.children[1].type === LIST) &&
-                    (ast.children[1].children.length === 1)) {
+                    (ast.children[1].children.length === 1)) { 
                     // special case of new ParallelArray(<expr>)
                     //
                     // this turns into the identity modulo type
                     ast.children[1].children[0] = drive(ast.children[1].children[0], tEnv, fEnv);
                     right = tEnv.accu.clone();
-                    if (right.isObjectType("Array")) {
+                    if (right.isObjectType(TObject.ARRAY)) {
                         // Change the type. We have to construct the resulting type
                         // by hand here, as usually parallel arrays objects do not
                         // fall from the sky but are passed in or derived from
                         // selections. As this is potentially a nested array,
                         // we have to flatten the type here.
-                        right.name = "ParallelArray";
+                        right.name = TObject.PARALLELARRAY;
                         right.properties.shape = right.getOpenCLShape();
                         right.properties.elements = function getLast(type) { return type.isScalarType() ? type : getLast(type.properties.elements);}(right);
                         ast.type = FLATTEN;
                         ast.children[0] = ast.children[1].children[0];
                         delete ast.children[1];
-                    } else if (right.isObjectType("ParallelArray")) {
+                    } else if (right.isObjectType(TObject.PARALLELARRAY)) {
                         // simply get rid of the new
                         ast = ast.children[1].children[0];
                     } else {
@@ -1538,7 +1561,7 @@ RiverTrail.Typeinference = function () {
 
             case DEBUGGER:  // whatever this is...
             default:
-                throw "unhandled node type in analysis: " + ast.type + " is " + RiverTrail.Helper.wrappedPP(ast);
+                throw "unhandled node type in analysis: " + ast.type + " is " + RiverTrail.Helper.wrappedPP(ast);
         }
         ast.typeInfo = tEnv.accu;
         debug && ast.typeInfo && console.log(Narcissus.decompiler.pp(ast) + " has type " + ast.typeInfo.toString());
@@ -1584,7 +1607,7 @@ RiverTrail.Typeinference = function () {
                     }
                     objshape.push(shapes[idx].value);
                 }
-                tEnv.accu = new TObject("Array");
+                tEnv.accu = new TObject(TObject.ARRAY);
                 var elements = [];
                 var d;
                 var top_level_type = "";
@@ -1597,7 +1620,7 @@ RiverTrail.Typeinference = function () {
                         elements[d].properties = {};
                     }
                     else {
-                        elements[d] = new TObject("Array");
+                        elements[d] = new TObject(TObject.ARRAY);
                         elements[d].OpenCLType = elementTypeInfo.typeInfo.OpenCLType +
                             top_level_type.slice(0, top_level_type.length - d - 1);
                         elements[d].properties = {};
@@ -1635,11 +1658,11 @@ RiverTrail.Typeinference = function () {
             default:
                 reportError("unsupported argument kind encountered");
         };
-
+        
         return type;
     }
 
-    //
+    // 
     // data flow graph for address space forwarding
     //
     // The graph is double linked, directed. It consits of three kinds of nodes:
@@ -1726,7 +1749,7 @@ RiverTrail.Typeinference = function () {
     };
 
     function propagateAddressSpaces(roots) {
-        var workset = roots.map(function (val) {
+        var workset = roots.map(function (val) { 
                 !val._flow || reportBug ("leftover flow information!");
                 val._flow = true;
                 debug && console.log("FLOW: adding root " + val.toString());
@@ -1779,7 +1802,7 @@ RiverTrail.Typeinference = function () {
                             var specs = frame.root.adrSpecStore;
                             var match = undefined;
                             if (specs) {
-                                specs.some(function (v) {
+                                specs.some(function (v) { 
                                         if (v.typeInfo.parameters.every(function (v,idx) {
                                                 if (idx === val.number) {
                                                     // current arg
@@ -1872,7 +1895,7 @@ RiverTrail.Typeinference = function () {
         tEnv.openCLFloatType = (openCLUseLowPrecision ? "float" : "double");
         // create type info for this
         if ((construct === "combine") || (construct === "map")) {
-            var thisT = TObject.makeType("ParallelArray", pa);
+            var thisT = TObject.makeType(TObject.PARALLELARRAY, pa);
             thisT.properties.addressSpace = "__global";
             tEnv.bind("this");
             tEnv.update("this", thisT);
@@ -1886,7 +1909,6 @@ RiverTrail.Typeinference = function () {
             var ivType = new TObject(TObject.ARRAY);
             ivType.properties.shape = [rank];
             ivType.properties.elements = new TLiteral(TLiteral.NUMBER);
-            ivType.properties.elements.OpenCLType = "int";
             ivType.updateOpenCLType();
             ivType.properties.addressSpace = "__private";
             tEnv.bind(params[0]);
@@ -1897,7 +1919,6 @@ RiverTrail.Typeinference = function () {
         } else if (construct === "comprehensionScalar") {
             // create type info for scalar index argument
             var ivType = new TLiteral(TLiteral.NUMBER);
-            ivType.OpenCLType = "int";
             tEnv.bind(params[0]);
             tEnv.update(params[0], ivType);
             params = params.slice(1);
@@ -1922,8 +1943,8 @@ RiverTrail.Typeinference = function () {
 
         // create type info for all arguments
         params.forEach(function (name) { tEnv.bind(name); });
-        params.forEach(function (name, idx) { var type = typeOracle(extraArgs[idx]);
-                                              tEnv.update(name, type);
+        params.forEach(function (name, idx) { var type = typeOracle(extraArgs[idx]); 
+                                              tEnv.update(name, type); 
                                               type.isObjectType() && tEnv.addRoot(type);
                                               argT.push(type);});
 
@@ -1931,11 +1952,12 @@ RiverTrail.Typeinference = function () {
 
         var type = new TFunction(argT, tEnv.functionResult);
         ast.typeInfo = type;
+        ast.symbols = tEnv;
 
-        // propagate address space qualifiers
-        propagateAddressSpaces(tEnv.getRoots());
+        // propagate address space qualifiers
+	propagateAddressSpaces(tEnv.getRoots());
         insertSpecialisations(ast);
-
+                    
         debug && console.log("Overall function has type (first arg. is this) " + type.toString());
         debug && console.log(RiverTrail.dotviz.plotTypes(tEnv._roots));
 

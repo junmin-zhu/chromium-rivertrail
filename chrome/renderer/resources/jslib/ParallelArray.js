@@ -2,28 +2,29 @@
  * Copyright (c) 2011, Intel Corporation
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
+ * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are met:
  *
- * - Redistributions of source code must retain the above copyright notice,
+ * - Redistributions of source code must retain the above copyright notice, 
  *   this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
+ * - Redistributions in binary form must reproduce the above copyright notice, 
+ *   this list of conditions and the following disclaimer in the documentation 
  *   and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
  * THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
 // "use strict";
 ////////////////////
 
@@ -77,7 +78,7 @@
 //        A freshly minted ParallelArray
 
 //    Notes
-//        <…> is used to indicate a ParallelArray in these examples it is not syntactical   sugar actually available to the program.
+//        <...> is used to indicate a ParallelArray in these examples it is not syntactical   sugar actually available to the program.
 //	
 //        pa1 = new ParallelArray(\[[0,1], [2,3], [4,5]]); // <<0,1>, <2,3>, <4.5>>
 //        pa2 = new ParallelArray(pa1);                   // <<0,1>, <2,3>, <4.5>>
@@ -90,7 +91,9 @@
 
 /////////////////
 
+
 ParallelArray = function () {
+
 
 //    The array object has the following prototype methods that are also implemented
 //    for ParallelArray.
@@ -105,8 +108,7 @@ ParallelArray = function () {
 //    There are other patterns that can be easily derived from these patterns for example max of a ParallelArray
 //    is nothing more that a reduce using the binary max function.
 
-
-
+    
     // use Proxies to emulate square bracket index selection on ParallelArray objects
     var enableProxies = false;
 
@@ -142,31 +144,35 @@ ParallelArray = function () {
     // check whether the OpenCL implementation supports double
     var enable64BitFloatingPoint = false;
     if (useInterface) {
-        var dpoI;
-        var dpoP;
+        var extensions;
         try {
-            if (useFF4Interface)
-              dpoI = new DPOInterface();
-            else if (useCrInterface)
-              dpoI = new CInterface();
-        } catch (e) {
-            console.log("Unable to create new DPOInterface()/CInterface(): "+e);
+            extensions = RiverTrail.compiler.openCLContext.extensions;
+        } catch (ignore) {
+            // extensions = undefined;
         }
+        if (!extensions) {
+            var dpoI;
+            var dpoP;
+            var dpoC;
+            try {
+                if (useFF4Interface)
+                    dpoI = new DPOInterface();
+                else if (useCrInterface)
+                    dpoI = new CInterface();
+                dpoP = dpoI.getPlatform();
+                dpoC = dpoP.createContext();
 
-        try {
-            dpoP = dpoI.getPlatform();
-            enable64BitFloatingPoint = (dpoP.extensions.indexOf("cl_khr_fp64") !== -1);
-        } catch (e) {
-            console.log("Unable to find OpenCL platform: "+e);
-            console.log("enable64BitFloatingPoint has been disabled");
-            enable64BitFloatingPoint = false;
-            // eat the problem after you announce it to the console log.
+                extensions = dpoC.extensions || dpoP.extensions;
+            } catch (e) {
+                console.log("Unable to create new DPOInterface()/CInterface(): "+e);
+            }
         }
+        enable64BitFloatingPoint = (extensions.indexOf("cl_khr_fp64") !== -1);
     }
 
-    // this is the storage that is used by default when converting arrays
+    // this is the storage that is used by default when converting arrays 
     // to typed arrays.
-    var defaultTypedArrayConstructor
+    var defaultTypedArrayConstructor 
     = useInterface ? (enable64BitFloatingPoint ? Float64Array : Float32Array)
                     : Array;
     // the default type assigned to JavaScript numbers
@@ -176,17 +182,23 @@ ParallelArray = function () {
     var useKernelCaching = true;
     // whether to use lazy communication of openCL values
     var useLazyCommunication = false;
-    // whether to cache OpenCL buffers
-    var useBufferCaching = false;
+    // whether to cache OpenCL buffers is now a property configured in driver.js!
+    // -- var useBufferCaching = false;
     // whether to do update in place in scan
-    var useUpdateInPlaceScan = true;
+    var useUpdateInPlaceScan = false;
+
+    // sanity checking
+    if (useUpdateInPlaceScan && !useLazyCommunication) {
+        console.log("RiverTrail: useUpdateInPlaceScan requires useLazyCommunication. Disabling...");
+        useUpdateInPlaceScan = false;
+    }
 
     // For debugging purposed each parallel array I create has a fingerprint.
     var fingerprint = 0;
     var fingerprintTracker = [];
 
     var Constants = {
-        // Some constants, when constants are added to JS adjust accordingly
+        // Some constants, when constants are added to JS adjust accordingly 
         "zeroStrideConstant"    : [ ],
         "oneStrideConstant"     : [1],
         "emptyRawArrayConstant" : new defaultTypedArrayConstructor(),
@@ -198,7 +210,7 @@ ParallelArray = function () {
     var CompilerError = Error;   // compilation failed due to wrong program or missing support
     var CompilerBug = Error;     // something went wrong although it should not
     var CompilerAbort = Error;   // exception thrown to influence control flow, e.g., misspeculation
-
+    
     // helper function that throws an exception and logs it if verboseDebug is on
     var debugThrow = function (e) {
         if (RiverTrail.compiler.verboseDebug) {
@@ -219,27 +231,23 @@ ParallelArray = function () {
         };
     };
 
-    // If this.data is a OpenCL memory object, grab the values and store the OpenCL memory
+    // If this.data is a OpenCL memory object, grab the values and store the OpenCL memory 
     // object in the cache for later use.
     var materialize = function materialize() {
         if (useInterface && (this.data instanceof InterfaceData)) {
             // we have to first materialise the values on the JavaScript side
-            var cachedOpenCLMem = this.data;
-            this.data = cachedOpenCLMem.getValue();
-            if (useBufferCaching) {
-                this.cachedOpenCLMem = cachedOpenCLMem;
-            }
+            this.data = this.data.getValue();
         }
     };
 
     // Returns true if the values for x an y are withing fuzz.
-    // The purpose is to make sure that if a 64 bit floats is
-    // to a 32 bit float and back that they are recognized as
+    // The purpose is to make sure that if a 64 bit floats is 
+    // to a 32 bit float and back that they are recognized as 
     // fuzzyEqual.
     // This is clearly wrong but need to check with TS to figure out hte
     // right way to do this.
     var defaultFuzz = .0000002; // 32 bit IEEE654 has 1 bit of sign, 8 bits of exponent, and 23 bits of mantissa
-                                // .0000002 is between 1/(2**22) and 1/(2*23)
+                                // .0000002 is between 1/(2**22) and 1/(2*23) 
     var fuzzyEqual = function fuzzyEqual (x, y, fuzz) {
         var diff = x - y; // do the diff now to avoid losing percision from doing abs.
         if (diff < 0) {
@@ -250,7 +258,7 @@ ParallelArray = function () {
         var normalizedFuzz = ((absX > absY) ? absY : absX) * fuzz; // Avoids 0 if both aren't 0
         if (diff <= normalizedFuzz) { // <= so that 0, 0 works since fuzz will go to 0.
              return true;
-        }
+        } 
         return false;
     };
 
@@ -259,12 +267,12 @@ ParallelArray = function () {
     // element-wise using === with the source. If no constructor is provided, the default
     // is used.
     var convertToTypedArray = function convertToTypedArray(src, arrayConstructor) {
-        var constructor
+        var constructor 
             = arrayConstructor ? arrayConstructor : defaultTypedArrayConstructor;
         if (src.constructor === constructor) {
             // transforming the array into an array of the same kind
             // makes little sense. Besides, if the constructor is the
-            // Array constructor, applying it twice will yield a
+            // Array constructor, applying it twice will yield a 
             // doubly nested array!
             // this.elementalType = constructorToElementalType(constructor);
             return src;
@@ -315,7 +323,7 @@ ParallelArray = function () {
         return strides;
     };
 
-// Given the shape of an array return the number of elements.
+// Given the shape of an array return the number of elements.    
     var shapeToLength = function shapeToLength (shape) {
         var i;
         var result;
@@ -341,7 +349,7 @@ ParallelArray = function () {
             // We know we have a parallel array, we know it is flat.
             // Flat arrays are flat all the way down.
             // update/check localShape and localRank
-            pa.shape.forEach( function (v, idx) {
+            pa.shape.forEach( function (v, idx) { 
                     if (localShape[level+idx] === undefined) {
                         localShape[level+idx] = v;
                     } else if (localShape[level+idx] !== v) {
@@ -354,11 +362,11 @@ ParallelArray = function () {
             } else if (localRank !== level + pa.shape.length) {
                 throw "dimensionality mismatch; expected " + localRank + " found " + (level + pa.shape.length);
             }
-            var i;
+            var i;       
             var size = shapeToLength(pa.shape);
             pa.materialize(); // we have to materialize the array first!
             for (i=pa.offset;i<pa.offset+size;i++) {
-                flatArray[flatIndex] = pa.data[i];
+                flatArray[flatIndex] = pa.data[i];    
                 flatIndex++;
             }
         };
@@ -425,62 +433,63 @@ ParallelArray = function () {
         return result;
     };
 
+    // Proxy handler for mapping [<number>] and [<Array>] to call of |get|.
     var makeIndexOpHandler = function makeIndexOpProxy (obj) {
-        return {
-            // Fundamental traps
-            getOwnPropertyDescriptor: function(name) {
-                var desc = Object.getOwnPropertyDescriptor(obj, name);
-                // a trapping proxy's properties must always be configurable
-                if (desc !== undefined) { desc.configurable = true; }
-                return desc;
-            },
-            getPropertyDescriptor:  function(name) {
-                var desc = Object.getPropertyDescriptor(obj, name); // not in ES5
-                // a trapping proxy's properties must always be configurable
-                if (desc !== undefined) { desc.configurable = true; }
-                return desc;
-            },
-            getOwnPropertyNames: function() {
-                return Object.getOwnPropertyNames(obj);
-            },
-            getPropertyNames: function() {
-                return Object.getPropertyNames(obj);                // not in ES5
-            },
-            defineProperty: function(name, desc) {
-                Object.defineProperty(obj, name, desc);
-            },
-            delete: function(name) { return delete obj[name]; },
-            fix: function() {
-                if (Object.isFrozen(obj)) {
-                    return Object.getOwnPropertyNames(obj).map(function(name) {
-                               return Object.getOwnPropertyDescriptor(obj, name);
-                           });
-                }
-                // As long as obj is not frozen, the proxy won't allow itself to be fixed
-                return undefined; // will cause a TypeError to be thrown
-            },
+        return {  
+            // Fundamental traps  
+            getOwnPropertyDescriptor: function(name) {  
+                var desc = Object.getOwnPropertyDescriptor(obj, name);  
+                // a trapping proxy's properties must always be configurable  
+                if (desc !== undefined) { desc.configurable = true; }  
+                return desc;  
+            },  
+            getPropertyDescriptor:  function(name) {  
+                var desc = Object.getPropertyDescriptor(obj, name); // not in ES5  
+                // a trapping proxy's properties must always be configurable  
+                if (desc !== undefined) { desc.configurable = true; }  
+                return desc;  
+            },  
+            getOwnPropertyNames: function() {  
+                return Object.getOwnPropertyNames(obj);  
+            },  
+            getPropertyNames: function() {  
+                return Object.getPropertyNames(obj);                // not in ES5  
+            },  
+            defineProperty: function(name, desc) {  
+                Object.defineProperty(obj, name, desc);  
+            },  
+            delete: function(name) { return delete obj[name]; },     
+            fix: function() {  
+                if (Object.isFrozen(obj)) {  
+                    return Object.getOwnPropertyNames(obj).map(function(name) {  
+                               return Object.getOwnPropertyDescriptor(obj, name);  
+                           });  
+                }  
+                // As long as obj is not frozen, the proxy won't allow itself to be fixed  
+                return undefined; // will cause a TypeError to be thrown  
+            },  
 
-            // derived traps
-            has:          function(name) { return name in obj; },
-            hasOwn:       function(name) { return Object.prototype.hasOwnProperty.call(obj, name); },
-            get:          function(receiver, name) {
+            // derived traps  
+            has:          function(name) { return name in obj; },  
+            hasOwn:       function(name) { return Object.prototype.hasOwnProperty.call(obj, name); },  
+            get:          function(receiver, name) { 
                 var idx = parseInt(name);
                 if (idx == name) {
                     return obj.get(idx);
                 } else {
                     return obj[name];
-                }
-            },
-            set:          function(receiver, name, val) { obj[name] = val; return true; }, // bad behavior when set fails in non-strict mode
-            enumerate:    function() {
-                var result = [];
-                for (name in obj) { result.push(name); };
-                return result;
-            },
-            keys: function() { return Object.keys(obj) }
-        };
-    }
-
+                } 
+            },  
+            set:          function(receiver, name, val) { obj[name] = val; return true; }, // bad behavior when set fails in non-strict mode  
+            enumerate:    function() {  
+                var result = [];  
+                for (name in obj) { result.push(name); };  
+                return result;  
+            },  
+            keys: function() { return Object.keys(obj) }  
+        };  
+    }  
+        
 
     // Helper for constructor that generates an empty array.
     var createEmptyParallelArray = function createEmptyParallelArray () {
@@ -491,9 +500,9 @@ ParallelArray = function () {
         this.offset   = 0;
         return this;
     };
-    // Helper for constructor that takes a single element, an array, a typed array, a
+    // Helper for constructor that takes a single element, an array, a typed array, a 
     // ParallelArray, or an image of values. The optional second argument unfluences which
-    // kind of typed array is tried.
+    // kind of typed array is tried. 
     var createSimpleParallelArray = function createSimpleParallelArray(values, targetType) {
         if (values instanceof Array) {
             var flatArray = createFlatArray(values);
@@ -505,23 +514,20 @@ ParallelArray = function () {
                         this.data[i] = new ParallelArray(values[i]);
                     } else {
                         this.data[i] = values[i];
-                        /**
-                        this.shape = this.shape.push(values[i].length);
-                        **/
                     }
                 }
             } else { // we have a flat array.
-                this.shape = arrShape(values);
-                this.strides = shapeToStrides(this.shape);
+                this.shape = arrShape(values); 
+                this.strides = shapeToStrides(this.shape); 
                 this.flat = true;
                 this.offset = 0;
-                this.data = convertToTypedArray(flatArray, targetType);
+                this.data = convertToTypedArray(flatArray, targetType); 
                 if (this.data === undefined) this.data = flatArray;
             }
         } else if (values instanceof ParallelArray) {
             // Parallel Arrays can share data since they are immutable.
             this.flat = values.flat;
-            if (this.flat) {
+            if (this.flat) {            
                 this.shape = values.shape;
                 this.strides = values.strides;
                 this.offset = values.offset;
@@ -541,7 +547,7 @@ ParallelArray = function () {
             // We create a new typed array and copy the source elements over.
             // Just calling the constructor with the source array would not
             // suffice as typed arrays share the underlying buffer...
-            this.data = new values.constructor(values.length);
+            this.data = new values.constructor(values.length); 
             for (var i = 0; i < values.length; i++) {
                 this.data[i] = values[i];
             }
@@ -556,7 +562,7 @@ ParallelArray = function () {
             this.offset = 0;
             this.isKnownRegular = true;
         } else {
-            this.data = new defaultTypedArrayConstructor(1);
+            this.data = new defaultTypedArrayConstructor(1); 
             this.data[0] = values;
             if (this.data[0] !== values) {
                 this.data = new Array(1);
@@ -595,29 +601,29 @@ ParallelArray = function () {
         return this;
     };
 
-    var createOpenCLMemParallelArray = function( mobj, shape, type) {
+    var createOpenCLMemParallelArray = function( mobj, shape, type, offset) {
         this.data = mobj;
         this.shape = shape;
         this.elementalType = type;
         this.strides = shapeToStrides( shape);
         this.flat = true;
-        this.offset = 0;
+        this.offset = offset | 0;
 
         return this;
     };
 
     // Occasionally we want to surpress the actual execution of the OpenCL and just look at the verboseDebug
-    // information. This reduces browser crashes and makes debugging easier.
+    // information. This reduces browser crashes and makes debugging easier. 
     // Normally this is false.
     var suppressOpenCL = false;
     //var suppressOpenCL = true;
 
-    // kernelCompiler is the OCL parser and code generator. It is generated and placed here the first
+    // kernelCompiler is the OCL parser and code generator. It is generated and placed here the first 
     // the the ParallelArray constructor is called.
     var kernelCompiler = false;
 
     // Used by the constructor to build a ParallelArray with given a size vector and a function.
-    // Used by combine to build the new ParallelArray.
+    // Used by combine to build the new ParallelArray. 
 
     /***
         buildRaw
@@ -645,7 +651,6 @@ ParallelArray = function () {
             The expected use case for the constructors is to construct the element using the indices and the 
             extra args.
     ***/
-
     var buildRaw = function buildRaw(theThisArray, left, right, fTemp, extraArgs, scalarIndex) {
         var i;
         var elementalResult;
@@ -668,7 +673,7 @@ ParallelArray = function () {
                     indices[left.length] = i; // This is the index that changes.
                     applyArgs[0] = indices;
                 }
-
+                
                 elementalResult = fTemp.apply(theThisArray, applyArgs);
                 if (elementalResult instanceof Array) {
                     result[i] = new ParallelArray(elementalResult);
@@ -698,7 +703,6 @@ ParallelArray = function () {
         }
         return result;
     };
-
     /** Erase RLH.
     var calculateSize = function calculateSize(ravel) {
         var size = 0;
@@ -713,6 +717,7 @@ ParallelArray = function () {
         return size;
     };
     **/
+
     var partition = function partition(partitionSize) {
         if (this.flat) {
             return partitionFlat(this, partitionSize);
@@ -734,7 +739,7 @@ ParallelArray = function () {
     var partitionFlat = function partitionFlat(pa, partitionSize) {
         var newShape = new Array(pa.shape.length+1);
         var i;
-
+        
         for (i=1;i<newShape.length;i++) {
             newShape[i]=pa.shape[i-1];
         }
@@ -742,7 +747,7 @@ ParallelArray = function () {
 
         newShape[0] = newShape[1] / partitionSize;
         newShape[1] = partitionSize;
-
+        
         if (shapeToLength(newShape) != shapeToLength(pa.shape)) {
             throw new RangeError("Attempt to partition ParallelArray unevenly.");
         }
@@ -772,9 +777,9 @@ ParallelArray = function () {
                 return false;
             }
         }
-        return true;
+        return true;       
     };
-    // Is this a regular array?
+    // Is this a regular array? 
     // At this point this does not check for type....
     var isRegular = function isRegular() {
         if (this.isKnownRegular === undefined) {
@@ -797,8 +802,8 @@ ParallelArray = function () {
                     this.isKnownRegular = false;
                 }
             }
-        }
-
+        } 
+        
         return this.isKnownRegular;
     };
     // Get the shape of a regular array down to the depth requested.
@@ -810,12 +815,12 @@ ParallelArray = function () {
         }
         return (depth === undefined) ? this.shape.slice(0) : this.shape.slice(0, depth);
     };
-
+   
     // When in the elemental function f "this" is the same as "this" in combine.
     var combineSeq = function combineSeq(depth, f) { // optional arguments follow
         var i;
         var result;
-        var extraArgs;
+        var extraArgs; 
         var extraArgOffset = 2;
         if ((typeof(depth) === 'function') || (depth instanceof low_precision.wrapper)) {
             f = depth;
@@ -842,7 +847,7 @@ ParallelArray = function () {
         return new ParallelArray(this.data.constructor, result);
     };
 
-    // combine implements the openCL parallel version of combine.
+    // combine implements the openCL parallel version of combine.  
     // When in the elemental function f "this" is the same as "this" in combine.
 
     /***
@@ -851,17 +856,17 @@ ParallelArray = function () {
         Similar to map except this is the entire array and an index is provided since you have the entire array you can access other elements in the array. 
 
     Arguments
-        depth – the number of dimensions traversed to access an element in this
+        depth - the number of dimensions traversed to access an element in this
         Elemental function described below
         Optional arguments passed unchanged to elemental function
 
     Elemental Function 
         this - The ParallelArray
-        index	Location in combine’s result where the result of the elemental function is placed.  Suitable as the first argument to “get” to retrieve source values.
+        index	Location in combine's result where the result of the elemental function is placed.  Suitable as the first argument to "get" to retrieve source values.
         Optional arguments
             Same as the optional arguments passed to combine
         Result
-            An element to be placed in combine’s result at  the location indicated by index
+            An element to be placed in combine's result at  the location indicated by index
 
     Returns
         A freshly minted ParallelArray whose elements are the results of applying the elemental function.
@@ -870,11 +875,10 @@ ParallelArray = function () {
         pa.combine(function(i){return this.get(i);})
 
     ***/
-
     var combine = function combine(depth, f) { // optional arguments follow
         var i;
         var paResult;
-        var extraArgs;
+        var extraArgs; 
         var extraArgOffset = 2;
         if ((typeof(depth) === 'function') || (depth instanceof low_precision.wrapper)) {
             f = depth;
@@ -897,9 +901,9 @@ ParallelArray = function () {
         paResult = RiverTrail.compiler.compileAndGo(this, f, "combine", depth, extraArgs, enable64BitFloatingPoint);
         return paResult;
     };
-
+        
     /**
-      Fundamental Constructs of ParallelArray – the minimal set from which you should be able to cleanly express
+      Fundamental Constructs of ParallelArray - the minimal set from which you should be able to cleanly express
       90% of the useful constructs needed by programmers. 
           
       Map, 
@@ -920,7 +924,7 @@ ParallelArray = function () {
         Optional arguments - Same as the optional arguments passed to map 
     
     Result
-        An element to be placed in the result at the same offset we found “this”
+        An element to be placed in the result at the same offset we found "this"
  	
     Returns
         A freshly minted ParallelArray 
@@ -937,8 +941,8 @@ ParallelArray = function () {
         var fTemp = f;
         var args = new Array(arguments.length-1);
         var result = new Array(len);
-
-        // SAH: for now we have to manually unwrap. Proxies might be a solution but they
+        
+        // SAH: for now we have to manually unwrap. Proxies might be a solution but they 
         //      are too underspecified as of yet
         if (f instanceof low_precision.wrapper) {
             f = f.unwrap();
@@ -952,7 +956,7 @@ ParallelArray = function () {
             for (i=0;i<len;i++) {
                 for (j=1;j<arguments.length;j++) {
                     args[j] = arguments[j];
-                }
+                }              
                 args[0] = this.get(i);
                 result[i] = f.apply(this, args);
             }
@@ -962,15 +966,15 @@ ParallelArray = function () {
             // Not sure what to do here we have a Float32Array and we are using
             // these typed arrays to hold our data. Maintaining Float32Array will
             // potentially only loose precision, this is less of a problem than
-            // converting floats to say 8 bit clamped ints.
+            // converting floats to say 8 bit clamped ints. 
             return new ParallelArray(this.data.constructor, result);
         }
         return new ParallelArray(result);
         return new ParallelArray(this.data.constructor, result);
     };
-
+    
     //
-    // map -
+    // map - 
     //      Same as mapSeq but uses the OpenCL optimized version.
     //
 
@@ -980,15 +984,15 @@ ParallelArray = function () {
         var paResult;
         if (arguments.length === 1) { // no extra arguments present
             paResult = RiverTrail.compiler.compileAndGo(this, f, "map", 1, args, enable64BitFloatingPoint);
-        } else {
+        } else {            
             for (var j=1;j<arguments.length;j++) {
-                args[j-1] = arguments[j];
+                args[j-1] = arguments[j];                    
             }
-            paResult = RiverTrail.compiler.compileAndGo(this, f, "map", 1, args, enable64BitFloatingPoint);
+            paResult = RiverTrail.compiler.compileAndGo(this, f, "map", 1, args, enable64BitFloatingPoint); 
         }
         return paResult;
     };
-
+        
     /***
     reduce
     Arguments
@@ -1025,8 +1029,9 @@ ParallelArray = function () {
         Reduce does not require the elemental function be communitive since it does
         induce reordering of the arguments passed to the elemental function's.
     ***/
+
     var reduce = function reduce(f, optionalInit) {
-        // SAH: for now we have to manually unwrap. Proxies might be a solution but they
+        // SAH: for now we have to manually unwrap. Proxies might be a solution but they 
         //      are too underspecified as of yet
         if (f instanceof low_precision.wrapper) {
             f = f.unwrap();
@@ -1086,16 +1091,15 @@ ParallelArray = function () {
         Typically the programmer will only call scan with associative functions 
         but there is nothing preventing them doing otherwise.
     ***/
-
-    var scan = function scan(f) {
-        // SAH: for now we have to manually unwrap. Proxies might be a solution but they
+    var scan = function scan(f) {    
+        // SAH: for now we have to manually unwrap. Proxies might be a solution but they 
         //      are too underspecified as of yet
         if (f instanceof low_precision.wrapper) {
             f = f.unwrap();
         }
 
         if (this.getShape()[0] < 2) {
-            //
+            // 
             // handle case where we only have one row => the result is the first element
             //
             return this;
@@ -1104,11 +1108,11 @@ ParallelArray = function () {
 
         var len = this.length;
         var rawResult = new Array(len);
-        var privateThis;
+        var movingArg;
         var callArguments = Array.prototype.slice.call(arguments, 0); // array copy
         var ignoreLength = callArguments.unshift(0); // callArguments now has 2 free location for a and b.
         if (this.getShape().length < 2) {
-            //
+            // 
             // Special case where selection yields a scalar element. Offloading the inner
             // kernel to OpenCL is most likely not beneficial and we cannot use the offset
             // based selection as get does not yield a Parallel Array. Using a naive for
@@ -1122,7 +1126,7 @@ ParallelArray = function () {
             }
             return (new ParallelArray(rawResult));
         }
-        //
+        // 
         // We have a n-dimensional parallel array, so we try to use offset based selection
         // and speculative OpenCL exectution
         //
@@ -1135,83 +1139,92 @@ ParallelArray = function () {
         var localStride = this.strides[0];
 
         if (useUpdateInPlaceScan) {
-            // SAH: I speculate that the scan operation is shape uniform. If it is not,
-            //      performance goes down the drain anyways so a few extra executions won't
+            // SAH: I speculate that the scan operation is shape uniform. If it is not, 
+            //      performance goes down the drain anyways so a few extra executions won't 
             //      matter.
             try {
                 rawResult[0] = this.get(0);
-                privateThis = this.get(1);
+                movingArg = this.get(1);
                 callArguments[0] = rawResult[0];
-                rawResult[1] = f.apply(privateThis, callArguments);
-                if ((rawResult[1].data instanceof InterfaceData) &&
-                    equalsShape(rawResult[0].getShape(), rawResult[1].getShape())) {
+                callArguments[1] = movingArg;
+                rawResult[1] = f.apply(this, callArguments);
+                var last = rawResult[1];
+                if ((last.data instanceof InterfaceData) &&
+                    equalsShape(rawResult[0].getShape(), last.getShape())) {
                     // this was computed by openCL and the function is shape preserving.
                     // Try to preallocate and compute the result in place!
                     // We need the real data here, so materialize it
-                    privateThis.materialize();
+                    last.materialize();
+                    this.materialize();
                     // create a new typed array for the result and store it in updateinplace
-                    var updateInPlace = new privateThis.data.constructor(privateThis.data.length);
+                    var updateInPlace = RiverTrail.Helper.allocateAlignedTA(last.data.constructor, this.data.length);
                     // copy the first line into the result
                     for (i=0; i<localStride; i++) {
                         updateInPlace[i] = this.data[i];
                     }
                     // copy the second line into the result
-                    var last = rawResult[1];
                     var result = undefined;
-                    last.materialize;
                     for (i=0; i <localStride; i++) {
                         updateInPlace[i+localStride] = last.data[i];
                     }
                     // create a new parallel array to pass as prev
-                    var updateInPlacePA = rawResult[0];
+                    var updateInPlacePA = this.get(0);
                     // swap the data store of the updateInPlacePA
                     updateInPlacePA.data = updateInPlace;
+                    // add a self reference in case combine is called on this argument
+                    updateInPlacePA.updateInPlacePA = updateInPlacePA;
+                    updateInPlacePA.updateInPlaceOffset = localStride;
+                    updateInPlacePA.updateInPlaceShape = last.shape;
                     // set up the arguments
                     callArguments[0] = updateInPlacePA;
+                    callArguments[1] = movingArg;
                     // set the write offset and updateInPlace info
-                    privateThis.updateInPlacePA = updateInPlacePA;
-                    privateThis.updateInPlaceOffset = localStride;
-                    privateThis.updateInPlaceShape = last.shape;
+                    movingArg.updateInPlacePA = updateInPlacePA;
+                    movingArg.updateInPlaceOffset = localStride;
+                    movingArg.updateInPlaceShape = last.shape;
                     for (i=2;i<len;i++) {
-                        // Effectivey change privateThis to refer to the next element in this.
-                        privateThis.offset += localStride;
+                        // Effectivey change movingArg to refer to the next element in this.
+                        movingArg.offset += localStride;
                         updateInPlacePA.offset += localStride;
-                        privateThis.updateInPlaceOffset += localStride;
-                        privateThis.updateInPlaceUses = 0;
+                        movingArg.updateInPlaceOffset += localStride;
+                        updateInPlacePA.updateInPlaceOffset += localStride;
+                        updateInPlacePA.updateInPlaceUses = 0;
                         // i is the index in the result.
-                        result = f.apply(privateThis, callArguments);
-                        if (result.data !== privateThis.updateInPlacePA.data) {
+                        result = f.apply(this, callArguments);
+                        if (result.data !== movingArg.updateInPlacePA.data) {
                             // we failed to update in place
                             throw new CompilerAbort("speculation failed: result buffer was not used");
                         }
                     }
                     return new ParallelArray( updateInPlacePA.data, this.shape, this.inferredType);
-                }
+                } 
             }
             catch (e) {
                 // clean up to continute below
                 console.log("scan: speculation failed, reverting to normal mode");
-                privateThis = this.get(1);
+                movingArg = this.get(1);
                 rawResult[0] = this.get(0);
                 callArguments[0] = rawResult[0];
             }
         } else {
             // speculation is disabled, so set up the stage
-            privateThis = this.get(1);
+            movingArg = this.get(1);
             rawResult[0] = this.get(0);
             callArguments[0] = rawResult[0];
-            rawResult[1] = f.apply(privateThis, callArguments);
+            callArguments[1] = movingArg;
+            rawResult[1] = f.apply(this, callArguments);
         }
-
+        
         for (i=2;i<len;i++) {
-            // Effectivey change privateThis to refer to the next element in this.
-            privateThis.offset += localStride;
+            // Effectivey change movingArg to refer to the next element in this.
+            movingArg.offset += localStride;
             callArguments[0] = rawResult[i-1];
             // i is the index in the result.
-            rawResult[i] = f.apply(privateThis, callArguments);
+            rawResult[i] = f.apply(this, callArguments);
         }
         return (new ParallelArray(rawResult));
     };
+            
     /***
     filter
         Arguments
@@ -1220,13 +1233,13 @@ ParallelArray = function () {
 
         Elemental Function 
             this - The ParallelArray
-            index - The location in “this” where the source element is found. 
+            index - The location in "this" where the source element is found. 
             Optional arguments - Same as the optional arguments passed to filter
             Result
                 true (true, 1, or other JavaScript truthy value) 
-                    if the source element should be placed in filter’s result.
+                    if the source element should be placed in filter's result.
                 false (false, 0, undefined, or other JavaScript falsey value) 
-                    if the source element should not to be placed in filter’s result. 
+                    if the source element should not to be placed in filter's result. 
  
         Returns
             A freshly minted ParallelArray holding source elements where the 
@@ -1260,13 +1273,15 @@ ParallelArray = function () {
         }
         return (new ParallelArray(rawResult));
     };
+    
+   
 
     /***
     scatter
         Arguments
             indices: array of indices in the resulting array
             defaultValue:   optional argument indicating the value of elements not set by scatter
-                            When not present, the default value is 'undefined’
+                            When not present, the default value is 'undefined'
             conflictFunction: optional function to resolve conflicts, details below.
             length: optional argument indicating the length of the resulting array.
                     If absent, the length is the same as the length of the indices argument 
@@ -1290,9 +1305,9 @@ ParallelArray = function () {
 
             Arguments
                 this is value from the source array that is currently being scattered
-                Previous value – value in result placed there by some previous iteration
+                Previous value - value in result placed there by some previous iteration
 
-            It is the programmer’s responsibility to provide a conflictFunction that is 
+            It is the programmer's responsibility to provide a conflictFunction that is 
             associative and commutative since there is no guarantee in what order the 
             conflicts will be resolved. 
 
@@ -1311,24 +1326,24 @@ ParallelArray = function () {
         var hasDefault = (arguments.length >= 2);
         var hasConflictFunction = (arguments.length >=3 && arguments[2] != null);
         var newLen = (arguments.length >= 4 ? length : len);
-
+                
         var rawResult = new Array(newLen);
         var conflictResult = new Array(newLen);
         var i;
-
+                
         if (hasDefault) {
             for (i = 0; i < newLen; i++) {
                 rawResult[i] = defaultValue;
             }
-        }
-
+        } 
+    
         for (i = 0; i < indices.length; i++) {
             var ind = (indices instanceof ParallelArray) ? indices.get(i) : indices[i];
             if (ind >= newLen) throw new RangeError("Scatter index out of bounds");
             if (conflictResult[ind]) { // we have already placed a value at this location
                 if (hasConflictFunction) {
-                    rawResult[ind] =
-                        conflictFunction.call(undefined, this.get(i), rawResult[ind]);
+                    rawResult[ind] = 
+                        conflictFunction.call(undefined, this.get(i), rawResult[ind]); 
                 } else {
                     throw new RangeError("Duplicate indices in scatter");
                 }
@@ -1339,8 +1354,8 @@ ParallelArray = function () {
         }
         result = new ParallelArray(rawResult);
         return result;
-    };
-
+    };    
+    
     /*** End of the fundemental constructts */
         
         
@@ -1355,7 +1370,6 @@ ParallelArray = function () {
       Returns a JS array holding a copy of the elements from the ParallelArray.
       If the element is a ParallelArray then it's elemets are also copied in to a JS Array.
      ***/
-
     var getArray = function getArray () {
         var i, result;
         if ((this.flat) && (this.shape.length === 1)) {
@@ -1373,7 +1387,7 @@ ParallelArray = function () {
         }
         return result;
     };
-
+    
     // This takes a ParallelArray and creates a similar JavaScript array.
     // By similar the array returned will be of a cononical type. In
     // particular it will be whatever type the data in the ParallelArray
@@ -1418,8 +1432,8 @@ ParallelArray = function () {
                     result.elementalType = this.elementalType;
                     /* need to fix up shape somehow. */
                     result.shape = this.shape.slice(index.length);
-                    result.strides = this.strides.slice(index.length);
-                    /* changing the shape might invalidate the _fastClasses specialisation,
+                    result.strides = this.strides.slice(index.length); 
+                    /* changing the shape might invalidate the _fastClasses specialisation, 
                      * so better ensure things are still fine
                      */
                     if (result.__proto__ !== ParallelArray.prototype) {
@@ -1427,9 +1441,9 @@ ParallelArray = function () {
                     }
                     return result;
                }
-            }
-            //  else it is flat but not (index instanceof Array)
-            if (arguments.length == 1) {
+            } 
+            //  else it is flat but not (index instanceof Array) 
+            if (arguments.length == 1) { 
                 // One argument that is a scalar index.
                 if ((index < 0) || (index >= this.shape[0])) return undefined;
                 if (this.shape.length == 1) {
@@ -1444,7 +1458,7 @@ ParallelArray = function () {
                     result.elementalType = this.elementalType;
                     /* need to fix up shape somehow. */
                     result.shape = this.shape.slice(1);
-                    result.strides = this.strides.slice(1);
+                    result.strides = this.strides.slice(1); 
                     return result;
                 }
             }
@@ -1452,7 +1466,7 @@ ParallelArray = function () {
             argsAsArray = Array.prototype.slice.call(arguments);
             return this.get(argsAsArray);
         } // end flat array path.
-
+        
         if (arguments.length == 1) {
             if (!(arguments[0] instanceof Array)) {
                 return this.data[index];
@@ -1460,7 +1474,11 @@ ParallelArray = function () {
                 // not flat, index is an array of indices.
                 result = this;
                 for (i=0;i<arguments[0].length;i++) {
-                    result = result.data[arguments[0][i]];
+                    if (result instanceof ParallelArray && result.flat) {
+                        result = result.get(arguments[0][i]);
+                    } else {
+                        result = result.data[arguments[0][i]];
+                    }
                     // out of bounds => abort further selections
                     if (result === undefined) return result;
                 }
@@ -1468,17 +1486,21 @@ ParallelArray = function () {
             }
         }
         // not flat, more than one argument.
-
+        
         result = this;
         for (i=0;i<arguments.length;i++) {
-            result = result.data[arguments[i]];
+            if (result instanceof ParallelArray && result.flat) {
+                result = result.get(arguments[i]);
+            } else {
+                result = result.data[arguments[i]];
+            }
             // out of bounds => abort further selections
             if (result === undefined) return result;
         }
         return result;
     };
-
-
+        
+    
     // Write content of parallel array into a canvas
     // XXX: Assumes that image is going to fill the whole canvas
     var writeToCanvas = function writeToCanvas(canvas) {
@@ -1497,13 +1519,20 @@ ParallelArray = function () {
         context.putImageData(imageData, 0, 0);
     };
 
+    //      Some functions that mimic the JavaScript Array functionality ***
 
-
+    //      The array object has the following prototype methods that are also implemented
+    //      for ParallelArray.
+    //          
+    //      concat() 
+    //      join()  
+    //      slice()
+    //      toString() 
 
     // concat() Joins two or more arrays, and returns a copy of the joined arrays
     var concat = function concat () {
         var len = arguments.length;
-        var result;
+        var result; 
         var applyArgs;
         var allTypedArrays = isTypedArray(this.data);
         var allArrays = (this.data instanceof Array);
@@ -1524,14 +1553,14 @@ ParallelArray = function () {
                 allArrays = (arguments[i].data instanceof Array);
             }
         }
-
+        
         if (allTypedArrays) {
             return concatTypedArrayData.apply(this, applyArgs);
         }
         if (allArrays) {
             return concatArrayData.apply(this, applyArgs);
         }
-        // Nothing simple just do it like the old fashion way, one element at a time.
+        // Nothing simple just do it like the old fashion way, one element at a time. 
         result = new Array(resultLength);
         // Do this
         for (i=0;i<this.length;i++) {
@@ -1547,17 +1576,17 @@ ParallelArray = function () {
         }
         return new ParallelArray(result);
     };
-
-    // concatTypedArrayData() Joins two or more arrays using typed arrays, and
+                
+    // concatTypedArrayData() Joins two or more arrays using typed arrays, and 
     // returns a copy of the joined arrays
     var concatTypedArrayData = function concatTypedArrayData () {
         var len = arguments.length;
-        var result;
+        var result; 
         var applyArgs;
         var i;
         var resultLength = this.length;
         var offset;
-
+            
         for (i=0;i<arguments.length;i++) {
             resultLength += arguments[i].length;
         }
@@ -1570,7 +1599,7 @@ ParallelArray = function () {
         }
         return new ParallelArray (result);
     };
-    // concatTypedArrayData() Joins two or more arrays using typed arrays, and
+    // concatTypedArrayData() Joins two or more arrays using typed arrays, and 
     // returns a copy of the joined arrays
     var concatArrayData = function concatArrayData () {
         var i;
@@ -1596,7 +1625,7 @@ ParallelArray = function () {
         }
         return result;
     };
-
+    
     // pop()        Removes the last element of an array, and returns that element
     var pop = function pop (f) {
         throw new TypeError("ParallelArray has no method 'pop' - it is a read only construct.");
@@ -1622,7 +1651,7 @@ ParallelArray = function () {
         }
         return new ParallelArray(this.data.slice(startArg, endArg));
     };
-
+    
     // sort()       Sorts the elements of an array
     var sort = function sort (f) {
         throw new TypeError("ParallelArray has no method 'sort' - it is a read only construct.");
@@ -1631,23 +1660,27 @@ ParallelArray = function () {
     var splice = function splice (f) {
         throw new TypeError("ParallelArray has no method 'splice' - it is a read only construct.");
     };
-
+    
     // toString()   Converts an array to a string, and returns the result
     var toString = function toString (arg1) {
-        var max = this.shape.reduce(function (v, p) { return v*p; }) + this.offset;
-        var res = "[";
-        for (var pos = this.offset; pos < max; pos++) {
-            res += ((pos === this.offset) ? "" : ", ") + this.data[pos];
+        if (this.flat) {
+            var max = this.shape.reduce(function (v, p) { return v*p; }) + this.offset;
+            var res = "[";
+            for (var pos = this.offset; pos < max; pos++) {
+                res += ((pos === this.offset) ? "" : ", ") + this.data[pos];
+            }
+            res += "]";
+            return res;
+        } else {
+            return "[" + this.data.join(", ") + "]";
         }
-        res += "]";
-        return res;
     };
-
+    
     // unshift()    Adds new elements to the beginning of an array, and returns the new length
     var unshift = function unshift (f) {
         throw new TypeError("ParallelArray has no method 'unshift' - it is a read only construct.");
     };
-
+    
     var flatten = function flatten () {
         var len = this.length;
         var newLength = 0;
@@ -1678,7 +1711,7 @@ ParallelArray = function () {
                         next++;
                 }
         }
-
+        
         return new ParallelArray(resultArray);
     };
     var flattenRegular = function flattenRegular () {
@@ -1721,7 +1754,7 @@ ParallelArray = function () {
 
     var _fastClasses = function () {
 
-        var Fast0DPA = function (pa) {
+        var Fast0DPA = function (pa) { 
             // shallow copy of object w/o attributes inherited from prototype
             //
             // SAH: The following generic code would be nice to use, but it prevents
@@ -1750,7 +1783,7 @@ ParallelArray = function () {
             }
         };
 
-        var Fast1DPA = function (pa) {
+        var Fast1DPA = function (pa) { 
             // shallow copy of object w/o attributes inherited from prototype
             //
             // SAH: The following generic code would be nice to use, but it prevents
@@ -1788,7 +1821,7 @@ ParallelArray = function () {
             }
         };
 
-        var Fast2DPA = function (pa) {
+        var Fast2DPA = function (pa) { 
             // shallow copy of object w/o attributes inherited from prototype
             //
             // SAH: The following generic code would be nice to use, but it prevents
@@ -1822,7 +1855,7 @@ ParallelArray = function () {
                         result.elementalType = this.elementalType;
                         /* need to fix up shape somehow. */
                         result.shape = this.shape.slice(1);
-                        result.strides = this.strides.slice(1);
+                        result.strides = this.strides.slice(1); 
                         return result;
                     } else {
                         /* fall back to slow mode */
@@ -1835,7 +1868,7 @@ ParallelArray = function () {
                 }
             }
         };
-        var Fast3DPA = function (pa) {
+        var Fast3DPA = function (pa) { 
             // shallow copy of object w/o attributes inherited from prototype
             //
             // SAH: The following generic code would be nice to use, but it prevents
@@ -1868,7 +1901,7 @@ ParallelArray = function () {
                     result.elementalType = this.elementalType;
                     /* need to fix up shape somehow. */
                     result.shape = this.shape.slice(2);
-                    result.strides = this.strides.slice(2);
+                    result.strides = this.strides.slice(2); 
                     return result;
                 } else if (aLen === 1) {
                     if (typeof index === "number") {
@@ -1878,7 +1911,7 @@ ParallelArray = function () {
                         result.elementalType = this.elementalType;
                         /* need to fix up shape somehow. */
                         result.shape = this.shape.slice(1);
-                        result.strides = this.strides.slice(1);
+                        result.strides = this.strides.slice(1); 
                         return result;
                     } else {
                         /* fall back to slow mode */
@@ -1906,7 +1939,7 @@ ParallelArray = function () {
 
         if (arguments.length == 0) {
             result = createEmptyParallelArray.call(this);
-        } else if (arguments.length == 1) {
+        } else if (arguments.length == 1) {     
             result = createSimpleParallelArray.call(this, arguments[0]);
         } else if ((arguments.length == 2) && (typeof(arguments[0]) == 'function')) {
             // Special case where we force the type of the result. Should only be used internally
@@ -1922,7 +1955,7 @@ ParallelArray = function () {
             result.flat = arguments[1].flat;
         } else if (useInterface && (arguments[0] instanceof InterfaceData)) {
             result = createOpenCLMemParallelArray.apply(this, arguments);
-        } else if (typeof(arguments[1]) === 'function') {
+        } else if (typeof(arguments[1]) === 'function' || arguments[1] instanceof low_precision.wrapper) {
             var extraArgs;
             if (arguments.length > 2) {
                 extraArgs = new Array(arguments.length -2); // skip the size vector and the function
@@ -1935,23 +1968,23 @@ ParallelArray = function () {
             }
             result = createComprehensionParallelArray.call(this, arguments[0], arguments[1], extraArgs);
         } else {
-            // arguments.slice doesn't work since arguments is not really an array so use this approach.
+            // arguments.slice doesn't work since arguments is not really an array so use this approach. 
             var argsAsArray = Array.prototype.slice.call(arguments);
             result = createSimpleParallelArray.call(this, argsAsArray);
         }
-
+    
         for (i=0;i<fingerprintTracker.length;i++) {
             if (fingerprint === fingerprintTracker[i]) {
                 console.log ("(fingerprint === fingerprintTracker)");
             }
         }
         result.uniqueFingerprint = fingerprint++;
-
+        
         // use fast code for get if possible
         if (result.flat && result.shape && result.shape.length < 4) {
             result = new _fastClasses[result.shape.length](result);
         }
-
+    
         if (enableProxies) {
             try { // for Chrome/Safari compatability
                 result = Proxy.create(makeIndexOpHandler(result), ParallelArray.prototype);
@@ -1970,7 +2003,7 @@ ParallelArray = function () {
                 requiresData(result, "getArray");
             } else {
                 result.materialize();
-            }
+            }  
         }
 
         return result;
@@ -2028,8 +2061,8 @@ ParallelArray = function () {
         "inferType" : inferType,
         get maxPrecision () { return enable64BitFloatingPoint ? 64 : 32; }
     };
-
-    // SAH: Tie up fast classes with the PA prototype.
+    
+    // SAH: Tie up fast classes with the PA prototype. 
     _fastClasses.forEach( function (fc) {fc.prototype.__proto__ = ParallelArray.prototype});
 
     return ParallelArray;
