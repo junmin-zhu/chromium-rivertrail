@@ -923,6 +923,8 @@
       }],
       ['OS=="win"', {
         'windows_driver_kit_path%': '$(WDK_DIR)',
+        # Path to OpenCL SDK
+        'opencl_sdk_path': '<!(python <(DEPTH)/build/find_opencl.py)',
       }],
       # If use_official_google_api_keys is already set (to 0 or 1), we
       # do none of the implicit checking.  If it is set to 1 and the
